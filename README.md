@@ -53,6 +53,30 @@ The RPM build checks the OpenVPN release tarball's signature against the pinned 
 
 From a terminal: `awsvpn --connect` / `awsvpn --disconnect`. The daemon logs to `journalctl -u awsvpnd`.
 
+## Keeping OpenVPN up to date
+
+The package bundles its own patched OpenVPN (`/usr/libexec/awsvpn/openvpn`), so `dnf upgrade` and
+GNOME Software never update it. To make up for that:
+
+- A daily **user timer** (`awsvpn-update-check.timer`) compares the bundled version with upstream
+  release tags on GitHub. It only reports releases whose signed tarball is downloadable, and lists any
+  CVEs mentioned in the upstream ChangeLog.
+- A **newer release in the same series** (e.g. 2.6.24) gives a desktop notification, repeated weekly
+  until you update, and a banner in the app. A **new series** (e.g. 2.7) is announced once, because
+  it needs the AWS patch ported by hand.
+- You can also check manually from the app menu (**Check for OpenVPN Updates**) or with
+  `awsvpn --check-updates`.
+
+To update to a maintenance release:
+
+```sh
+make openvpn-bump V=2.6.24     # rebases the AWS patch (no fuzz), updates Makefile + spec, bumps Release
+make rpm
+sudo dnf upgrade ./rpmbuild/RPMS/x86_64/awsvpn-*.rpm
+```
+
+To turn the check off: `systemctl --user disable --now awsvpn-update-check.timer`.
+
 ## Development
 
 ```sh

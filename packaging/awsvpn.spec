@@ -88,6 +88,12 @@ install -Dm0644 packaging/awsvpn.sysusers %{buildroot}%{_sysusersdir}/awsvpn.con
 install -Dm0755 app/bin/awsvpn %{buildroot}%{_bindir}/awsvpn
 install -dm0755 %{buildroot}%{_datadir}/awsvpn/awsvpn
 install -m0644 app/awsvpn/*.py %{buildroot}%{_datadir}/awsvpn/awsvpn/
+# Read by the update checker to compare against upstream releases.
+printf '%%s\n' '%{ovpn_version}' > %{buildroot}%{_datadir}/awsvpn/openvpn-version
+install -Dm0644 packaging/%{app_id}.service %{buildroot}%{_datadir}/dbus-1/services/%{app_id}.service
+install -Dm0644 packaging/awsvpn-update-check.service %{buildroot}%{_userunitdir}/awsvpn-update-check.service
+install -Dm0644 packaging/awsvpn-update-check.timer %{buildroot}%{_userunitdir}/awsvpn-update-check.timer
+install -Dm0644 packaging/80-awsvpn.preset %{buildroot}%{_userpresetdir}/80-awsvpn.preset
 install -Dm0644 app/data/%{app_id}.desktop %{buildroot}%{_datadir}/applications/%{app_id}.desktop
 install -Dm0644 app/data/%{app_id}.metainfo.xml %{buildroot}%{_metainfodir}/%{app_id}.metainfo.xml
 install -Dm0644 app/data/icons/%{app_id}.svg %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/%{app_id}.svg
@@ -97,9 +103,11 @@ install -m0644 extension/%{ext_uuid}/* %{buildroot}%{_datadir}/gnome-shell/exten
 
 %post
 %systemd_post awsvpnd.service
+%systemd_user_post awsvpn-update-check.timer
 
 %preun
 %systemd_preun awsvpnd.service
+%systemd_user_preun awsvpn-update-check.timer
 
 %postun
 %systemd_postun_with_restart awsvpnd.service
@@ -118,6 +126,10 @@ install -m0644 extension/%{ext_uuid}/* %{buildroot}%{_datadir}/gnome-shell/exten
 %{_bindir}/awsvpn
 %{_datadir}/awsvpn/
 %{_datadir}/applications/%{app_id}.desktop
+%{_datadir}/dbus-1/services/%{app_id}.service
+%{_userunitdir}/awsvpn-update-check.service
+%{_userunitdir}/awsvpn-update-check.timer
+%{_userpresetdir}/80-awsvpn.preset
 %{_metainfodir}/%{app_id}.metainfo.xml
 %{_datadir}/icons/hicolor/scalable/apps/%{app_id}.svg
 %{_datadir}/gnome-shell/extensions/%{ext_uuid}/
@@ -127,6 +139,9 @@ install -m0644 extension/%{ext_uuid}/* %{buildroot}%{_datadir}/gnome-shell/exten
 - App: keep the status area and connect button outside the scroll area,
   make Details collapsible and fit the window height to its content.
 - Parenthesize enlarged size macros in the AWS OpenVPN patch.
+- Daily user timer checks for newer OpenVPN releases and notifies; the app
+  shows a banner. Add `make openvpn-bump V=x.y.z` to rebase the patch.
+- App is D-Bus activatable so notification buttons work when it is closed.
 
 * Sun Oct 18 2026 Ola Aasen Juul <94843506+AdelsJarlen@users.noreply.github.com> - 0.1.0-1
 - Initial package: Go daemon, libadwaita app, GNOME Shell extension,

@@ -8,6 +8,7 @@ Type=Application
 Categories=Network;GTK;
 Keywords=vpn;aws;openvpn;saml;
 StartupNotify=true
+DBusActivatable=true
 Actions=connect;disconnect;
 
 [Desktop Action connect]

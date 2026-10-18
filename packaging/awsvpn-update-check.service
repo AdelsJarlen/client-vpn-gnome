@@ -1,0 +1,10 @@
+[Unit]
+Description=Check for a newer OpenVPN for AWS VPN
+Documentation=https://github.com/AdelsJarlen/aws-vpn-client
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/awsvpn --check-updates
+# Network lookups only; nothing here needs to write outside the cache.
+NoNewPrivileges=yes
+PrivateTmp=yes

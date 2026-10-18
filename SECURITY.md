@@ -31,6 +31,14 @@
 - The loopback port 35001 is fixed by AWS. Another local process could bind it first. The app then reports
   "port busy" instead of continuing.
 - DNS settings pushed by the server are applied per link via systemd-resolved and disappear with the tun device.
+- The bundled OpenVPN is on the **2.6** series because that is the only one with a published AWS patch
+  (AWS's `openvpn-2.6.12-aws-1` source drop). OpenVPN 2.7 is the current series and still needs the patch, but
+  it does not apply without porting. The update checker warns weekly about new 2.6 releases, but it goes quiet
+  once 2.6 stops getting releases. When that happens, port to 2.7. (The official AWS client 6.x no longer
+  uses OpenVPN 2.x at all. It embeds OpenVPN 3 Core.)
+- The official client also handles AWS extensions pushed as `CRV1::` echoes (device posture checks, banners,
+  client route monitoring). This client ignores them, so endpoints that *require* device posture checks will
+  not work.
 
 ## Reporting
 

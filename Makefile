@@ -4,7 +4,7 @@ OVPN_URL     := https://swupdate.openvpn.org/community/releases/openvpn-$(OVPN_V
 TOPDIR       := $(CURDIR)/rpmbuild
 SOURCES      := $(TOPDIR)/SOURCES
 
-.PHONY: all test lint vendor sources rpm srpm clean
+.PHONY: all test lint vendor sources rpm srpm clean openvpn-bump
 
 all: test
 
@@ -36,6 +36,11 @@ rpm: sources
 
 srpm: sources
 	rpmbuild -bs --define "_topdir $(TOPDIR)" packaging/awsvpn.spec
+
+# Rebase the AWS patch onto a newer OpenVPN maintenance release: make openvpn-bump V=2.6.24
+openvpn-bump:
+	@test -n "$(V)" || { echo "usage: make openvpn-bump V=x.y.z"; exit 2; }
+	scripts/bump-openvpn.sh $(V)
 
 clean:
 	rm -rf $(TOPDIR) daemon/vendor daemon/awsvpnd

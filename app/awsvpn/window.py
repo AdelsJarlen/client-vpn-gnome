@@ -3,6 +3,8 @@ import time
 
 from gi.repository import Adw, Gio, GLib, Gtk
 
+from . import update_check
+
 STATE_TEXT = {
     "disconnected": ("Disconnected", "network-vpn-disabled-symbolic"),
     "authenticating": ("Waiting for login…", "network-vpn-acquiring-symbolic"),
@@ -62,15 +64,25 @@ class Window(Adw.ApplicationWindow):
         header = Adw.HeaderBar()
         menu = Gio.Menu()
         menu.append("Import Profile…", "win.import")
+        menu.append("Check for OpenVPN Updates", "app.check-updates")
         menu.append("About AWS VPN", "app.about")
         header.pack_end(Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu, tooltip_text="Main Menu"))
         view.add_top_bar(header)
+
+        # Shown when a newer OpenVPN in the bundled series is available. It
+        # lives in the content box rather than as a toolbar top bar, because
+        # AdwToolbarView measures top bars without height-for-width and would
+        # under-count a banner that wraps at narrow widths.
+        self.update_banner = Adw.Banner(button_label="How to Update")
+        self.update_banner.connect("button-clicked", lambda *_: self._on_update_banner())
+        self._update_result = None
 
         import_action = Gio.SimpleAction(name="import")
         import_action.connect("activate", lambda *_: self.choose_profile())
         self.add_action(import_action)
 
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        content.append(self.update_banner)
 
         # Status area: never scrolls, so it is part of the window's minimum
         # height and the connect/disconnect button is always visible.
@@ -117,6 +129,10 @@ class Window(Adw.ApplicationWindow):
         self._last_error = None
         self.refresh()
 
+        self.show_update(update_check.current_result())
+        if update_check.is_stale():
+            app.check_updates(notify=False)
+
     def _on_close(self, *_):
         if self._tick:
             GLib.source_remove(self._tick)
@@ -131,7 +147,11 @@ class Window(Adw.ApplicationWindow):
     def _fit_height(self):
         """Resize to the natural height, keeping the user's width."""
         if not (self.is_maximized() or self.is_fullscreen()):
-            self.set_default_size(self.get_width() or 420, -1)
+            width = self.get_width() or 420
+            # Set the measured height explicitly: re-setting -1 ("natural")
+            # is a no-op while the default height is still -1.
+            _min, natural, _b1, _b2 = self.get_content().measure(Gtk.Orientation.VERTICAL, width)
+            self.set_default_size(width, natural)
         return GLib.SOURCE_REMOVE
 
     def _on_tick(self):
@@ -165,6 +185,48 @@ class Window(Adw.ApplicationWindow):
         else:
             self.state_icon.remove_css_class("accent")
             self.state_icon.add_css_class("dim-label")
+
+    def show_update(self, result):
+        self._update_result = result
+        reveal = bool(result and result.get("update"))
+        if reveal:
+            kind = "Security update" if result.get("cves") else "Update"
+            self.update_banner.set_title(f"{kind}: OpenVPN {result['update']} is available")
+        if reveal != self.update_banner.get_revealed():
+            self.update_banner.set_revealed(reveal)
+            # Refit once the banner's reveal animation has finished.
+            GLib.timeout_add(400, self._fit_height)
+
+    def _on_update_banner(self):
+        if self._update_result:
+            self.present_update_help(self._update_result)
+
+    def present_update_help(self, result):
+        new, old = result["update"], result["installed"]
+        body = (f"System updates do not cover the OpenVPN bundled with AWS VPN ({old}). "
+                "Rebuild the package from your aws-vpn-client checkout:")
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        commands = Gtk.Label(
+            label=(f"make openvpn-bump V={new}\n"
+                   "make rpm\n"
+                   "sudo dnf upgrade \\\n  ./rpmbuild/RPMS/x86_64/awsvpn-*.rpm"),
+            selectable=True, xalign=0, css_classes=["monospace", "caption"])
+        box.append(commands)
+        if result.get("cves"):
+            box.append(Gtk.Label(label="Fixes " + ", ".join(result["cves"]), wrap=True,
+                                 css_classes=["caption", "dim-label"]))
+        dialog = Adw.AlertDialog(heading=f"Update OpenVPN to {new}", body=body, extra_child=box)
+        dialog.add_response("notes", "Release Notes")
+        dialog.add_response("close", "Close")
+        dialog.set_default_response("close")
+        dialog.set_close_response("close")
+
+        def on_response(_d, response):
+            if response == "notes":
+                self.app._open_url(update_check.RELEASE_NOTES_URL.format(v=new))
+
+        dialog.connect("response", on_response)
+        dialog.present(self)
 
     def toast(self, text):
         self.toasts.add_toast(Adw.Toast(title=GLib.markup_escape_text(text), timeout=6))
