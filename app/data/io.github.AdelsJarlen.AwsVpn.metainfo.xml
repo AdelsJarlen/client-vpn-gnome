@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.AdelsJarlen.AwsVpn</id>
+  <name>AWS VPN</name>
+  <summary>Connect to AWS Client VPN with single sign-on</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <launchable type="desktop-id">io.github.AdelsJarlen.AwsVpn.desktop</launchable>
+  <url type="homepage">https://github.com/AdelsJarlen/aws-vpn-client</url>
+  <description>
+    <p>Connects to AWS Client VPN endpoints that use SAML federated authentication, using a hardened, open-source OpenVPN build and a small privileged service.</p>
+  </description>
+  <releases>
+    <release version="0.1.0" date="2026-10-18"/>
+  </releases>
+</component>

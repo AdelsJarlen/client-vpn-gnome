@@ -1,0 +1,19 @@
+[Desktop Entry]
+Name=AWS VPN
+Comment=Connect to AWS Client VPN with single sign-on
+Exec=awsvpn
+Icon=io.github.AdelsJarlen.AwsVpn
+Terminal=false
+Type=Application
+Categories=Network;GTK;
+Keywords=vpn;aws;openvpn;saml;
+StartupNotify=true
+Actions=connect;disconnect;
+
+[Desktop Action connect]
+Name=Connect
+Exec=awsvpn --connect
+
+[Desktop Action disconnect]
+Name=Disconnect
+Exec=awsvpn --disconnect
