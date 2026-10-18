@@ -76,6 +76,7 @@ type Config struct {
 	DNS          DNS
 	Resolve      func(ctx context.Context, host string) ([]net.IP, error)
 	OnChange     func(Status)
+	DCO          bool // allow kernel data channel offload
 	LoginTimeout time.Duration
 	PhaseTimeout time.Duration
 }
@@ -253,7 +254,7 @@ func (m *Manager) challenge(ctx context.Context) (string, *pendingLogin, error) 
 	proc, err := m.cfg.Launch(pctx, openvpn.Options{
 		Binary: m.cfg.Binary, Config: conf, RemoteIP: ip, Port: prof.Port, Proto: prof.Proto,
 		MgmtPath: filepath.Join(dir, "mgmt.sock"), User: m.cfg.User, UID: m.cfg.UID, GID: m.cfg.GID,
-		Phase1: true,
+		Phase1: true, DCO: m.cfg.DCO,
 	})
 	if err != nil {
 		return "", nil, err
@@ -350,6 +351,7 @@ func (m *Manager) CompleteLogin(owner, samlResponse string) error {
 	proc, err := m.cfg.Launch(context.Background(), openvpn.Options{
 		Binary: m.cfg.Binary, Config: conf, RemoteIP: p.remoteIP, Port: p.profile.Port, Proto: p.profile.Proto,
 		MgmtPath: filepath.Join(dir, "mgmt.sock"), User: m.cfg.User, UID: m.cfg.UID, GID: m.cfg.GID,
+		DCO: m.cfg.DCO,
 	})
 	if err != nil {
 		m.fail(err)

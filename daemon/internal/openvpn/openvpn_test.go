@@ -75,10 +75,17 @@ func TestPushedDNS(t *testing.T) {
 func TestArgsNoSecretsAndPrivDrop(t *testing.T) {
 	o := Options{Binary: "/usr/libexec/awsvpn/openvpn", Config: "/run/awsvpn/t/vpn.conf", RemoteIP: "52.1.2.3", Port: 443, Proto: "udp", MgmtPath: "/run/awsvpn/t/mgmt.sock", User: "awsvpn"}
 	a := strings.Join(o.Args(), " ")
-	for _, want := range []string{"--user awsvpn", "--management-client-user root", "--auth-retry none", "--remote 52.1.2.3 443"} {
+	for _, want := range []string{"--user awsvpn", "--management-client-user root", "--auth-retry none", "--remote 52.1.2.3 443", "--dns-updown disable"} {
 		if !strings.Contains(a, want) {
 			t.Errorf("missing %q in %s", want, a)
 		}
+	}
+	if !strings.Contains(a, "--disable-dco") || strings.Contains(a, "--persist-key") {
+		t.Errorf("want --disable-dco by default and no deprecated --persist-key: %s", a)
+	}
+	o.DCO = true
+	if strings.Contains(strings.Join(o.Args(), " "), "--disable-dco") {
+		t.Error("--disable-dco passed although DCO is enabled")
 	}
 	o.Phase1 = true
 	if strings.Contains(strings.Join(o.Args(), " "), "--user") {

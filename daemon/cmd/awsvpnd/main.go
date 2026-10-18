@@ -39,6 +39,7 @@ func main() {
 	stateDir := flag.String("state-dir", "/var/lib/awsvpn", "profile storage")
 	runDir := flag.String("run-dir", "/run/awsvpn", "runtime directory")
 	userName := flag.String("user", "awsvpn", "unprivileged user for OpenVPN")
+	dco := flag.Bool("dco", false, "allow OpenVPN data channel offload (kernel ovpn module)")
 	flag.Parse()
 	log.SetFlags(0) // journald adds timestamps
 
@@ -70,6 +71,7 @@ func main() {
 	mgr := vpn.New(vpn.Config{
 		Binary: *binary, StateDir: *stateDir, RunDir: *runDir,
 		User: *userName, UID: uint32(uid), GID: uint32(gid),
+		DCO:    *dco,
 		Launch: launch,
 		DNS:    resolvedDNS{conn},
 		OnChange: func(s vpn.Status) {

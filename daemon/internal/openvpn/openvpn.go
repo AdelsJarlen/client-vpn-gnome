@@ -55,6 +55,9 @@ type Options struct {
 	// challenge. Otherwise the process starts as root (to create the tun
 	// device) and drops to User/Group once the tunnel is up.
 	Phase1 bool
+	// DCO lets OpenVPN 2.7 use the kernel's data channel offload (ovpn
+	// module). Off by default: the userspace data path is the tested one.
+	DCO bool
 	Log    func(string)
 }
 
@@ -75,13 +78,17 @@ func (o Options) Args() []string {
 		"--management-query-passwords",
 		"--management-hold",
 		"--script-security", "1",
+		// 2.7 runs a dns-updown script by default when DNS is pushed; the
+		// daemon configures systemd-resolved itself instead.
+		"--dns-updown", "disable",
 		"--connect-retry-max", "1",
 	}
+	if !o.DCO {
+		a = append(a, "--disable-dco")
+	}
 	if !o.Phase1 {
-		a = append(a,
-			"--user", o.User, "--group", o.User,
-			"--persist-tun", "--persist-key",
-		)
+		// Keys are always persisted in 2.7 (--persist-key is deprecated).
+		a = append(a, "--user", o.User, "--group", o.User, "--persist-tun")
 	}
 	return a
 }
