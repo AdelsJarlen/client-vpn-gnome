@@ -41,10 +41,10 @@ index ab2872a..cb0c68e 100644
  
  struct gc_arena;
 diff --git a/src/openvpn/manage.c b/src/openvpn/manage.c
-index feb3227..cf2cf78 100644
+index 3a2e84e..e3792fa 100644
 --- a/src/openvpn/manage.c
 +++ b/src/openvpn/manage.c
-@@ -2245,7 +2245,7 @@ man_read(struct management *man)
+@@ -2253,7 +2253,7 @@ man_read(struct management *man)
      /*
       * read command line from socket
       */
@@ -53,7 +53,7 @@ index feb3227..cf2cf78 100644
      int len = 0;
  
  #ifdef TARGET_ANDROID
-@@ -2336,7 +2336,7 @@ man_read(struct management *man)
+@@ -2344,7 +2344,7 @@ man_read(struct management *man)
  static int
  man_write(struct management *man)
  {
@@ -62,7 +62,7 @@ index feb3227..cf2cf78 100644
      int sent = 0;
      const struct buffer *buf;
  
-@@ -2581,7 +2581,7 @@ man_connection_init(struct management *man)
+@@ -2589,7 +2589,7 @@ man_connection_init(struct management *man)
           * Allocate helper objects for command line input and
           * command output from/to the socket.
           */
@@ -90,10 +90,10 @@ index 1896510..7284f10 100644
   * Management-interface-based deferred authentication
   */
 diff --git a/src/openvpn/misc.h b/src/openvpn/misc.h
-index 0dc0883..39e8373 100644
+index 022498c..3e7cd3e 100644
 --- a/src/openvpn/misc.h
 +++ b/src/openvpn/misc.h
-@@ -65,7 +65,10 @@ struct user_pass
+@@ -66,7 +66,10 @@ struct user_pass
  #ifdef ENABLE_PKCS11
  #define USER_PASS_LEN 4096
  #else
@@ -106,7 +106,7 @@ index 0dc0883..39e8373 100644
      /* Note that username and password are expected to be null-terminated */
      char username[USER_PASS_LEN];
 diff --git a/src/openvpn/options.h b/src/openvpn/options.h
-index e85d806..f53149f 100644
+index 8482a4a..ddf35c1 100644
 --- a/src/openvpn/options.h
 +++ b/src/openvpn/options.h
 @@ -54,8 +54,8 @@
@@ -121,10 +121,10 @@ index e85d806..f53149f 100644
  extern const char title_string[];
  
 diff --git a/src/openvpn/ssl.c b/src/openvpn/ssl.c
-index e37ebc1..65eb90f 100644
+index 2f48af4..57ea22a 100644
 --- a/src/openvpn/ssl.c
 +++ b/src/openvpn/ssl.c
-@@ -1945,7 +1945,7 @@ tls_session_soft_reset(struct tls_multi *tls_multi)
+@@ -1969,7 +1969,7 @@ tls_session_soft_reset(struct tls_multi *tls_multi)
  static bool
  write_empty_string(struct buffer *buf)
  {
@@ -133,7 +133,7 @@ index e37ebc1..65eb90f 100644
      {
          return false;
      }
-@@ -1960,7 +1960,7 @@ write_string(struct buffer *buf, const char *str, const int maxlen)
+@@ -1984,7 +1984,7 @@ write_string(struct buffer *buf, const char *str, const int maxlen)
      {
          return false;
      }
@@ -142,7 +142,7 @@ index e37ebc1..65eb90f 100644
      {
          return false;
      }
-@@ -2300,6 +2300,10 @@ key_method_2_write(struct buffer *buf, struct tls_multi *multi, struct tls_sessi
+@@ -2345,6 +2345,10 @@ key_method_2_write(struct buffer *buf, struct tls_multi *multi, struct tls_sessi
          p2p_mode_ncp(multi, session);
      }
  
