@@ -1,0 +1,46 @@
+[Unit]
+Description=AWS Client VPN daemon
+Documentation=https://github.com/AdelsJarlen/aws-vpn-client
+After=network-online.target systemd-resolved.service
+Wants=network-online.target
+
+[Service]
+Type=dbus
+BusName=io.github.AdelsJarlen.AwsVpn1
+ExecStart=/usr/libexec/awsvpn/awsvpnd
+Restart=on-failure
+
+StateDirectory=awsvpn
+StateDirectoryMode=0700
+RuntimeDirectory=awsvpn
+RuntimeDirectoryMode=0711
+
+# OpenVPN needs to create the tun device and routes, then drops to the
+# awsvpn user. The daemon needs DAC override to reach the phase-1 socket
+# owned by awsvpn, and CHOWN to hand that user its working directory.
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_SETUID CAP_SETGID CAP_SETPCAP CAP_CHOWN CAP_DAC_OVERRIDE CAP_KILL
+AmbientCapabilities=
+NoNewPrivileges=yes
+DeviceAllow=/dev/net/tun rw
+DevicePolicy=closed
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@obsolete
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+UMask=0077
+

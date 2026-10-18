@@ -1,0 +1,5 @@
+/rpmbuild/
+/daemon/vendor/
+/daemon/awsvpnd
+__pycache__/
+*.pyc

@@ -1,0 +1,128 @@
+%global ovpn_version 2.6.23
+%global app_id io.github.AdelsJarlen.AwsVpn
+%global ext_uuid awsvpn@adelsjarlen.github.io
+# Go binaries are built without Fedora's go-rpm-macros; skip debuginfo.
+%global debug_package %{nil}
+
+Name:           awsvpn
+Version:        0.1.0
+Release:        1%{?dist}
+Summary:        AWS Client VPN (SAML) for GNOME: daemon, app and Quick Settings toggle
+License:        MIT AND GPL-2.0-only WITH openvpn-openssl-exception
+URL:            https://github.com/AdelsJarlen/aws-vpn-client
+
+Source0:        %{name}-%{version}.tar.gz
+Source1:        https://swupdate.openvpn.org/community/releases/openvpn-%{ovpn_version}.tar.gz
+Source2:        https://swupdate.openvpn.org/community/releases/openvpn-%{ovpn_version}.tar.gz.asc
+# OpenVPN Security Mailing List <security@openvpn.net>
+# F554 A368 7412 CFFE BDEF  E0A3 12F5 F7B4 2F2B 01E7
+Source3:        openvpn-signing-key.asc
+
+BuildRequires:  golang >= 1.22
+BuildRequires:  gcc
+BuildRequires:  make
+BuildRequires:  gnupg2
+BuildRequires:  openssl-devel
+BuildRequires:  lzo-devel
+BuildRequires:  lz4-devel
+BuildRequires:  libnl3-devel
+BuildRequires:  libcap-ng-devel
+BuildRequires:  systemd-rpm-macros
+BuildRequires:  desktop-file-utils
+
+Requires:       dbus
+Requires:       polkit
+Requires:       systemd-resolved
+Requires:       python3-gobject
+Requires:       gtk4
+Requires:       libadwaita >= 1.6
+Recommends:     gnome-shell >= 50
+%{?systemd_requires}
+
+%description
+A hardened client for AWS Client VPN endpoints that use SAML federated
+authentication. It consists of a small privileged D-Bus service (awsvpnd)
+that drives a patched OpenVPN %{ovpn_version}, a libadwaita application for
+importing profiles and logging in, and a GNOME Shell Quick Settings toggle.
+
+%prep
+%{gpgverify} --keyring='%{SOURCE3}' --signature='%{SOURCE2}' --data='%{SOURCE1}'
+%setup -q
+%setup -q -T -D -a 1
+pushd openvpn-%{ovpn_version}
+patch -p1 --fuzz=0 < ../patches/openvpn-v%{ovpn_version}-aws.patch
+popd
+
+%build
+pushd openvpn-%{ovpn_version}
+%configure \
+    --disable-plugins \
+    --disable-debug \
+    --with-crypto-library=openssl
+%make_build
+popd
+
+pushd daemon
+export GOFLAGS="-mod=vendor -trimpath" GOPROXY=off GOTOOLCHAIN=local CGO_ENABLED=1
+export CGO_CFLAGS="%{optflags}" CGO_LDFLAGS="%{build_ldflags}"
+go build -buildmode=pie -ldflags "-linkmode=external" -o awsvpnd ./cmd/awsvpnd
+popd
+
+%check
+pushd daemon
+GOFLAGS="-mod=vendor" GOPROXY=off GOTOOLCHAIN=local go test ./...
+popd
+./openvpn-%{ovpn_version}/src/openvpn/openvpn --version | head -1 | grep -q "OpenVPN %{ovpn_version}"
+desktop-file-validate app/data/%{app_id}.desktop
+
+%install
+install -Dm0755 openvpn-%{ovpn_version}/src/openvpn/openvpn %{buildroot}%{_libexecdir}/awsvpn/openvpn
+install -Dm0755 daemon/awsvpnd %{buildroot}%{_libexecdir}/awsvpn/awsvpnd
+
+install -Dm0644 packaging/awsvpnd.service %{buildroot}%{_unitdir}/awsvpnd.service
+install -Dm0644 packaging/io.github.AdelsJarlen.AwsVpn1.conf %{buildroot}%{_datadir}/dbus-1/system.d/io.github.AdelsJarlen.AwsVpn1.conf
+install -Dm0644 packaging/io.github.AdelsJarlen.AwsVpn1.service %{buildroot}%{_datadir}/dbus-1/system-services/io.github.AdelsJarlen.AwsVpn1.service
+install -Dm0644 packaging/io.github.AdelsJarlen.AwsVpn.policy %{buildroot}%{_datadir}/polkit-1/actions/io.github.AdelsJarlen.AwsVpn.policy
+install -Dm0644 packaging/awsvpn.sysusers %{buildroot}%{_sysusersdir}/awsvpn.conf
+
+install -Dm0755 app/bin/awsvpn %{buildroot}%{_bindir}/awsvpn
+install -dm0755 %{buildroot}%{_datadir}/awsvpn/awsvpn
+install -m0644 app/awsvpn/*.py %{buildroot}%{_datadir}/awsvpn/awsvpn/
+install -Dm0644 app/data/%{app_id}.desktop %{buildroot}%{_datadir}/applications/%{app_id}.desktop
+install -Dm0644 app/data/%{app_id}.metainfo.xml %{buildroot}%{_metainfodir}/%{app_id}.metainfo.xml
+install -Dm0644 app/data/icons/%{app_id}.svg %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/%{app_id}.svg
+
+install -dm0755 %{buildroot}%{_datadir}/gnome-shell/extensions/%{ext_uuid}
+install -m0644 extension/%{ext_uuid}/* %{buildroot}%{_datadir}/gnome-shell/extensions/%{ext_uuid}/
+
+%post
+%systemd_post awsvpnd.service
+
+%preun
+%systemd_preun awsvpnd.service
+
+%postun
+%systemd_postun_with_restart awsvpnd.service
+
+%files
+%license LICENSE
+%doc README.md SECURITY.md
+%dir %{_libexecdir}/awsvpn
+%{_libexecdir}/awsvpn/awsvpnd
+%{_libexecdir}/awsvpn/openvpn
+%{_unitdir}/awsvpnd.service
+%{_datadir}/dbus-1/system.d/io.github.AdelsJarlen.AwsVpn1.conf
+%{_datadir}/dbus-1/system-services/io.github.AdelsJarlen.AwsVpn1.service
+%{_datadir}/polkit-1/actions/io.github.AdelsJarlen.AwsVpn.policy
+%{_sysusersdir}/awsvpn.conf
+%{_bindir}/awsvpn
+%{_datadir}/awsvpn/
+%{_datadir}/applications/%{app_id}.desktop
+%{_metainfodir}/%{app_id}.metainfo.xml
+%{_datadir}/icons/hicolor/scalable/apps/%{app_id}.svg
+%{_datadir}/gnome-shell/extensions/%{ext_uuid}/
+
+%changelog
+* Sun Oct 18 2026 Ola Aasen Juul <94843506+AdelsJarlen@users.noreply.github.com> - 0.1.0-1
+- Initial package: Go daemon, libadwaita app, GNOME Shell extension,
+  OpenVPN 2.6.23 with the AWS SAML patch.
