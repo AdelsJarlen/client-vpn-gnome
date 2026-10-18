@@ -1,4 +1,4 @@
-VERSION      := 0.1.0
+VERSION      := 0.1.1
 OVPN_VERSION := 2.6.23
 OVPN_URL     := https://swupdate.openvpn.org/community/releases/openvpn-$(OVPN_VERSION).tar.gz
 TOPDIR       := $(CURDIR)/rpmbuild

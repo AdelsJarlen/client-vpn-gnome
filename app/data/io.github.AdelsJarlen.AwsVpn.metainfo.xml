@@ -11,6 +11,7 @@
     <p>Connects to AWS Client VPN endpoints that use SAML federated authentication, using a hardened, open-source OpenVPN build and a small privileged service.</p>
   </description>
   <releases>
+    <release version="0.1.1" date="2026-10-18"/>
     <release version="0.1.0" date="2026-10-18"/>
   </releases>
 </component>

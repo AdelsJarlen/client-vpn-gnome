@@ -12,7 +12,7 @@ from .login import LoginFlow  # noqa: E402
 from .window import Window  # noqa: E402
 
 APP_ID = "io.github.AdelsJarlen.AwsVpn"
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 
 class Application(Adw.Application):

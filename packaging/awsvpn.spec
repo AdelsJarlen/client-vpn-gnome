@@ -5,7 +5,7 @@
 %global debug_package %{nil}
 
 Name:           awsvpn
-Version:        0.1.0
+Version:        0.1.1
 Release:        1%{?dist}
 Summary:        AWS Client VPN (SAML) for GNOME: daemon, app and Quick Settings toggle
 License:        MIT AND GPL-2.0-only WITH openvpn-openssl-exception
@@ -123,6 +123,11 @@ install -m0644 extension/%{ext_uuid}/* %{buildroot}%{_datadir}/gnome-shell/exten
 %{_datadir}/gnome-shell/extensions/%{ext_uuid}/
 
 %changelog
+* Sun Oct 18 2026 Ola Aasen Juul <94843506+AdelsJarlen@users.noreply.github.com> - 0.1.1-1
+- App: keep the status area and connect button outside the scroll area,
+  make Details collapsible and fit the window height to its content.
+- Parenthesize enlarged size macros in the AWS OpenVPN patch.
+
 * Sun Oct 18 2026 Ola Aasen Juul <94843506+AdelsJarlen@users.noreply.github.com> - 0.1.0-1
 - Initial package: Go daemon, libadwaita app, GNOME Shell extension,
   OpenVPN 2.6.23 with the AWS SAML patch.

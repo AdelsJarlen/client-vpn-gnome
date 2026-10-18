@@ -1,3 +1,4 @@
+import os
 import time
 
 from gi.repository import Adw, Gio, GLib, Gtk
@@ -10,6 +11,9 @@ STATE_TEXT = {
     "error": ("Not connected", "network-vpn-disabled-symbolic"),
 }
 
+# Upper bound for the details area before it starts scrolling.
+DETAILS_MAX_HEIGHT = 360
+
 
 def _duration(seconds):
     seconds = max(0, int(seconds))
@@ -18,11 +22,40 @@ def _duration(seconds):
     return f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
 
 
+class _UiState:
+    """Tiny per-user UI state (e.g. whether details are expanded)."""
+
+    def __init__(self):
+        self._path = os.path.join(GLib.get_user_config_dir(), "awsvpn", "ui.ini")
+        self._kf = GLib.KeyFile()
+        try:
+            self._kf.load_from_file(self._path, GLib.KeyFileFlags.NONE)
+        except GLib.Error:
+            pass
+
+    def get_bool(self, key, default=False):
+        try:
+            return self._kf.get_boolean("window", key)
+        except GLib.Error:
+            return default
+
+    def set_bool(self, key, value):
+        self._kf.set_boolean("window", key, value)
+        try:
+            os.makedirs(os.path.dirname(self._path), mode=0o700, exist_ok=True)
+            self._kf.save_to_file(self._path)
+        except (OSError, GLib.Error):
+            pass
+
+
 class Window(Adw.ApplicationWindow):
     def __init__(self, app, client):
-        super().__init__(application=app, title="AWS VPN", default_width=420, default_height=560)
+        # No default height: the window opens at its natural height, which
+        # always includes the status area and the connect button.
+        super().__init__(application=app, title="AWS VPN", default_width=420)
         self.client = client
         self.app = app
+        self.ui_state = _UiState()
 
         self.toasts = Adw.ToastOverlay()
         view = Adw.ToolbarView()
@@ -37,27 +70,44 @@ class Window(Adw.ApplicationWindow):
         import_action.connect("activate", lambda *_: self.choose_profile())
         self.add_action(import_action)
 
-        page = Adw.PreferencesPage()
-        self.status_page = Adw.StatusPage(vexpand=False)
-        self.button = Gtk.Button(halign=Gtk.Align.CENTER, css_classes=["pill"])
-        self.button.connect("clicked", self._on_button)
-        self.status_page.set_child(self.button)
-        hero = Adw.PreferencesGroup()
-        hero.add(self.status_page)
-        page.add(hero)
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
-        self.details = Adw.PreferencesGroup(title="Details")
+        # Status area: never scrolls, so it is part of the window's minimum
+        # height and the connect/disconnect button is always visible.
+        hero = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12,
+                       margin_top=24, margin_bottom=24, margin_start=12, margin_end=12)
+        self.state_icon = Gtk.Image(pixel_size=96, css_classes=["dim-label"])
+        self.state_title = Gtk.Label(css_classes=["title-1"], wrap=True, justify=Gtk.Justification.CENTER)
+        self.state_desc = Gtk.Label(wrap=True, justify=Gtk.Justification.CENTER, max_width_chars=40)
+        self.button = Gtk.Button(halign=Gtk.Align.CENTER, css_classes=["pill"], margin_top=12)
+        self.button.connect("clicked", self._on_button)
+        for w in (self.state_icon, self.state_title, self.state_desc, self.button):
+            hero.append(w)
+        content.append(Adw.Clamp(maximum_size=400, child=hero))
+
+        # Details: collapsible, and the only part that scrolls.
+        self.details = Adw.ExpanderRow(title="Details", use_markup=False)
         self.rows = {}
         for key, title in (("ProfileName", "Profile"), ("ServerAddress", "Server"),
                            ("TunnelAddress", "Tunnel address"), ("uptime", "Connected for"),
                            ("traffic", "Received / sent")):
-            row = Adw.ActionRow(title=title, css_classes=["property"])
+            row = Adw.ActionRow(title=title, css_classes=["property"], use_markup=False)
             row.set_subtitle_selectable(True)
             self.rows[key] = row
-            self.details.add(row)
-        page.add(self.details)
+            self.details.add_row(row)
+        self.details.set_expanded(self.ui_state.get_bool("details-expanded"))
+        self.details.connect("notify::expanded", self._on_details_toggled)
 
-        view.set_content(page)
+        details_list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE, css_classes=["boxed-list"])
+        details_list.append(self.details)
+        self.details_area = Gtk.ScrolledWindow(
+            hscrollbar_policy=Gtk.PolicyType.NEVER, vexpand=True,
+            propagate_natural_height=True, max_content_height=DETAILS_MAX_HEIGHT,
+            child=Adw.Clamp(maximum_size=400, child=details_list,
+                            margin_start=12, margin_end=12, margin_bottom=24))
+        content.append(self.details_area)
+
+        view.set_content(content)
         self.toasts.set_child(view)
         self.set_content(self.toasts)
 
@@ -73,6 +123,17 @@ class Window(Adw.ApplicationWindow):
             self._tick = 0
         return False
 
+    def _on_details_toggled(self, row, _pspec):
+        self.ui_state.set_bool("details-expanded", row.get_expanded())
+        # Let the expander settle, then fit the window to the new content.
+        GLib.idle_add(self._fit_height)
+
+    def _fit_height(self):
+        """Resize to the natural height, keeping the user's width."""
+        if not (self.is_maximized() or self.is_fullscreen()):
+            self.set_default_size(self.get_width() or 420, -1)
+        return GLib.SOURCE_REMOVE
+
     def _on_tick(self):
         if self.client.status.get("State") == "connected":
             self._update_uptime()
@@ -80,7 +141,30 @@ class Window(Adw.ApplicationWindow):
 
     def _update_uptime(self):
         since = self.client.status.get("ConnectedSince") or 0
-        self.rows["uptime"].set_subtitle(_duration(time.time() - since) if since else "—")
+        uptime = _duration(time.time() - since) if since else "—"
+        self.rows["uptime"].set_subtitle(uptime)
+        self._update_summary(uptime)
+
+    def _update_summary(self, uptime=None):
+        """One-line summary shown on the collapsed Details row."""
+        s = self.client.status
+        if s.get("State") == "connected":
+            parts = [s.get("TunnelAddress") or "", uptime or ""]
+            self.details.set_subtitle(" · ".join(p for p in parts if p))
+        else:
+            self.details.set_subtitle(s.get("ProfileName") or "")
+
+    def _set_state(self, title, description, icon):
+        self.state_title.set_label(title)
+        self.state_desc.set_label(description)
+        self.state_desc.set_visible(bool(description))
+        self.state_icon.set_from_icon_name(icon)
+        if icon == "network-vpn-symbolic":
+            self.state_icon.remove_css_class("dim-label")
+            self.state_icon.add_css_class("accent")
+        else:
+            self.state_icon.remove_css_class("accent")
+            self.state_icon.add_css_class("dim-label")
 
     def toast(self, text):
         self.toasts.add_toast(Adw.Toast(title=GLib.markup_escape_text(text), timeout=6))
@@ -88,35 +172,33 @@ class Window(Adw.ApplicationWindow):
     def refresh(self):
         s = self.client.status
         if not self.client.available:
-            self.status_page.set_title("Service unavailable")
-            self.status_page.set_description("The awsvpnd service is not installed or failed to start.")
-            self.status_page.set_icon_name("network-vpn-disabled-symbolic")
+            self._set_state("Service unavailable",
+                            "The awsvpnd service is not installed or failed to start.",
+                            "network-vpn-disabled-symbolic")
             self.button.set_visible(False)
-            self.details.set_visible(False)
+            self.details_area.set_visible(False)
             return
         state = s.get("State") or "disconnected"
         title, icon = STATE_TEXT.get(state, (state, "network-vpn-symbolic"))
-        self.status_page.set_title(title)
-        self.status_page.set_icon_name(icon)
         has_profile = bool(s.get("ProfileName"))
-        self.details.set_visible(has_profile)
+        self.details_area.set_visible(has_profile)
         self.button.set_visible(True)
 
         for cls in ("suggested-action", "destructive-action"):
             self.button.remove_css_class(cls)
         if not has_profile:
-            self.status_page.set_description("Import the .ovpn file from your administrator to get started.")
+            desc = "Import the .ovpn file from your administrator to get started."
             self.button.set_label("Import Profile…")
             self.button.add_css_class("suggested-action")
         elif state in ("disconnected", "error"):
-            self.status_page.set_description(s.get("LastError") or "")
+            desc = s.get("LastError") or ""
             self.button.set_label("Connect")
             self.button.add_css_class("suggested-action")
         else:
             desc = "Finish signing in in your browser." if state == "authenticating" else ""
-            self.status_page.set_description(desc)
             self.button.set_label("Disconnect" if state == "connected" else "Cancel")
             self.button.add_css_class("destructive-action")
+        self._set_state(title, desc, icon)
 
         self.rows["ProfileName"].set_subtitle(s.get("ProfileName") or "—")
         self.rows["ServerAddress"].set_subtitle(s.get("ServerAddress") or "—")
