@@ -1,37 +1,67 @@
-# aws-vpn-client
+# AWS VPN for GNOME
 
-This is PoC to connect to the AWS Client VPN with OSS OpenVPN using SAML
-authentication. Tested on macOS and Linux, should also work on other POSIX OS with a minor changes.
+Connect to [AWS Client VPN](https://aws.amazon.com/vpn/client-vpn/) endpoints that use **SAML federated
+authentication** from Fedora / GNOME, without the closed-source Ubuntu-only AWS client.
 
-See [my blog post](https://smallhacks.wordpress.com/2020/07/08/aws-client-vpn-internals/) for the implementation details.
+- **awsvpnd**: a small Go system service (D-Bus activated, polkit-authorized) that drives a patched
+  OpenVPN 2.6.23 and drops privileges once the tunnel is up.
+- **AWS VPN** app: GTK 4 / libadwaita (Python). It imports your `.ovpn` profile, runs the browser login and shows status.
+- **Quick Settings toggle**: GNOME Shell 50 extension showing connection state, tunnel address, uptime and traffic.
 
-P.S. Recently [AWS released Linux desktop client](https://aws.amazon.com/about-aws/whats-new/2021/06/aws-client-vpn-launches-desktop-client-for-linux/), however, it is currently available only for Ubuntu, using Mono and is closed source. 
+Based on [aws-vpn-client](https://github.com/aws-vpn-client/aws-vpn-client) by Alex Samorukov. See
+[SECURITY.md](SECURITY.md) for what was changed and why.
 
-## Content of the repository
+## How it works
 
-- [openvpn-v2.4.9-aws.patch](openvpn-v2.4.9-aws.patch) - patch required to build
-AWS compatible OpenVPN v2.4.9, based on the
-[AWS source code](https://amazon-source-code-downloads.s3.amazonaws.com/aws/clientvpn/osx-v1.2.5/openvpn-2.4.5-aws-2.tar.gz) (thanks to @heprotecbuthealsoattac) for the link.
-- [server.go](server.go) - Go server to listed on http://127.0.0.1:35001 and save
-SAML Post data to the file
-- [aws-connect.sh](aws-connect.sh) - bash wrapper to run OpenVPN. It runs OpenVPN first time to get SAML Redirect and open browser and second time with actual SAML response
+AWS Client VPN uses the OpenVPN dynamic challenge (CRV1) protocol to carry SAML:
 
-## How to use
+1. OpenVPN connects with password `ACS::35001`. The server rejects it with a `CRV1` challenge containing a
+   session ID and the IdP login URL.
+2. You log in in the browser. The IdP POSTs a `SAMLResponse` to `http://127.0.0.1:35001/`.
+3. OpenVPN reconnects **to the same server IP** with password `CRV1::<session>::<SAMLResponse>`.
 
-1. Build patched openvpn version and put it to the folder with a script
-1. Start HTTP server with `go run server.go`
-1. Set VPN_HOST in the [aws-connect.sh](aws-connect.sh)
-1. Replace CA section in the sample [vpn.conf](vpn.conf) with one from your AWS configuration
-1. Finally run `aws-connect.sh` to connect to the AWS.
+Stock OpenVPN cannot send a password that long, so the build carries the AWS patch
+(`patches/openvpn-v2.6.23-aws.patch`, which only enlarges buffers and length fields).
 
-### Additional Steps
+```
+ Quick Settings toggle ──┐                       system D-Bus
+ AWS VPN app ────────────┼──────────────────────> awsvpnd (root, sandboxed by systemd)
+   └ one-shot listener 127.0.0.1:35001             ├ phase 1: openvpn as user `awsvpn`
+                                                   └ phase 2: openvpn, drops to `awsvpn` once up
+```
 
-Inspect your ovpn config and remove the following lines if present
-- `auth-user-pass` (we dont want to show user prompt)
-- `auth-federate` (propietary AWS keyword)
-- `auth-retry interact` (do not retry on failures)
-- `remote` and `remote-random-hostname` (already handled in CLI and can cause conflicts with it)
+## Build and install (Fedora 44)
 
-## Todo
+```sh
+sudo dnf install golang rpm-build gnupg2 openssl-devel lzo-devel lz4-devel \
+                 libnl3-devel libcap-ng-devel systemd-rpm-macros desktop-file-utils
+make test
+make rpm
+sudo dnf install ./rpmbuild/RPMS/x86_64/awsvpn-*.rpm
+gnome-extensions enable awsvpn@adelsjarlen.github.io   # then log out and back in
+```
 
-Better integrate SAML HTTP server with a script or rewrite everything on golang
+The RPM build checks the OpenVPN release tarball's signature against the pinned key in
+`packaging/openvpn-signing-key.asc`, applies the patch with `--fuzz=0` and runs the tests.
+
+## Usage
+
+1. Open **AWS VPN** and choose **Import Profile…**, then pick the `.ovpn` from your administrator
+   (this asks for your admin password once).
+2. Click **Connect**, or use the **AWS VPN** toggle in Quick Settings. Your browser opens; sign in.
+3. The toggle shows *Connected*. Click it again to disconnect.
+
+From a terminal: `awsvpn --connect` / `awsvpn --disconnect`. The daemon logs to `journalctl -u awsvpnd`.
+
+## Development
+
+```sh
+make test                                       # go vet, go test -race, python tests
+busctl --system introspect io.github.AdelsJarlen.AwsVpn1 /io/github/AdelsJarlen/AwsVpn1
+```
+
+To update the AWS patch for a newer AWS source drop, see `scripts/extract-aws-patch.sh`.
+
+## License
+
+MIT for this project. The bundled OpenVPN binary is GPL-2.0 with the OpenSSL exception.
