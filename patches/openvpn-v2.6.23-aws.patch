@@ -1,5 +1,12 @@
+AWS Client VPN SAML patch for OpenVPN 2.6.23.
+
+Derived from AWS's openvpn-2.6.12-aws-1 source drop (via upstream
+aws-vpn-client), rebased onto v2.6.23. Unlike the AWS original, the
+enlarged size macros are parenthesized: unparenthesized, expressions
+such as OPTION_PARM_SIZE + 16 expand to 1 << 33 (undefined behaviour).
+
 diff --git a/src/openvpn/buffer.h b/src/openvpn/buffer.h
-index d988ef2..3760175 100644
+index d988ef2..66ac439 100644
 --- a/src/openvpn/buffer.h
 +++ b/src/openvpn/buffer.h
 @@ -27,7 +27,7 @@
@@ -7,12 +14,12 @@ index d988ef2..3760175 100644
  #include "error.h"
  
 -#define BUF_SIZE_MAX 1000000
-+#define BUF_SIZE_MAX 1 << 21
++#define BUF_SIZE_MAX (1 << 21)
  
  /*
   * Define verify_align function, otherwise
 diff --git a/src/openvpn/common.h b/src/openvpn/common.h
-index 3a84541..61ee72e 100644
+index 3a84541..f3010bd 100644
 --- a/src/openvpn/common.h
 +++ b/src/openvpn/common.h
 @@ -66,7 +66,7 @@ typedef unsigned long ptr_type;
@@ -20,12 +27,12 @@ index 3a84541..61ee72e 100644
   * This parameter must be >= PUSH_BUNDLE_SIZE
   */
 -#define TLS_CHANNEL_BUF_SIZE 2048
-+#define TLS_CHANNEL_BUF_SIZE 1 << 18
++#define TLS_CHANNEL_BUF_SIZE (1 << 18)
  
  /* TLS control buffer minimum size
   *
 diff --git a/src/openvpn/error.h b/src/openvpn/error.h
-index ab2872a..cb0c68e 100644
+index ab2872a..e7fe796 100644
 --- a/src/openvpn/error.h
 +++ b/src/openvpn/error.h
 @@ -34,7 +34,10 @@
@@ -36,7 +43,7 @@ index ab2872a..cb0c68e 100644
 +/*
 + * Increase the error buffer size to 256 KB.
 + */
-+#define ERR_BUF_SIZE 1 << 18
++#define ERR_BUF_SIZE (1 << 18)
  #endif
  
  struct gc_arena;
@@ -90,7 +97,7 @@ index 1896510..7284f10 100644
   * Management-interface-based deferred authentication
   */
 diff --git a/src/openvpn/misc.h b/src/openvpn/misc.h
-index 022498c..3e7cd3e 100644
+index 022498c..9724782 100644
 --- a/src/openvpn/misc.h
 +++ b/src/openvpn/misc.h
 @@ -66,7 +66,10 @@ struct user_pass
@@ -101,7 +108,7 @@ index 022498c..3e7cd3e 100644
 +/*
 + * Increase the username and password length size to 128KB.
 + */
-+#define USER_PASS_LEN 1 << 17
++#define USER_PASS_LEN (1 << 17)
  #endif
      /* Note that username and password are expected to be null-terminated */
      char username[USER_PASS_LEN];
