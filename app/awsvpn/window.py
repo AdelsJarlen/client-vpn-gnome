@@ -97,8 +97,17 @@ class Window(Adw.ApplicationWindow):
             hero.append(w)
         content.append(Adw.Clamp(maximum_size=400, child=hero))
 
-        # Details: collapsible, and the only part that scrolls.
-        self.details = Adw.ExpanderRow(title="Details", use_markup=False)
+        # Details: collapsible, and the only part that scrolls. This is a
+        # header row plus rows that are shown/hidden instantly rather than an
+        # AdwExpanderRow: its slide animation makes the content height change
+        # over ~250 ms, so the window could only be fitted to a mid-animation
+        # (wrong) size.
+        details_list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE, css_classes=["boxed-list"])
+        self.details = Adw.ActionRow(title="Details", activatable=True, use_markup=False)
+        self.details_arrow = Gtk.Image(icon_name="pan-down-symbolic")
+        self.details.add_suffix(self.details_arrow)
+        self.details.connect("activated", lambda *_: self.set_details_expanded(not self._details_expanded))
+        details_list.append(self.details)
         self.rows = {}
         for key, title in (("ProfileName", "Profile"), ("ServerAddress", "Server"),
                            ("TunnelAddress", "Tunnel address"), ("uptime", "Connected for"),
@@ -106,12 +115,10 @@ class Window(Adw.ApplicationWindow):
             row = Adw.ActionRow(title=title, css_classes=["property"], use_markup=False)
             row.set_subtitle_selectable(True)
             self.rows[key] = row
-            self.details.add_row(row)
-        self.details.set_expanded(self.ui_state.get_bool("details-expanded"))
-        self.details.connect("notify::expanded", self._on_details_toggled)
+            details_list.append(row)
+        self._details_expanded = None
+        self.set_details_expanded(self.ui_state.get_bool("details-expanded"), fit=False)
 
-        details_list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE, css_classes=["boxed-list"])
-        details_list.append(self.details)
         self.details_area = Gtk.ScrolledWindow(
             hscrollbar_policy=Gtk.PolicyType.NEVER, vexpand=True,
             propagate_natural_height=True, max_content_height=DETAILS_MAX_HEIGHT,
@@ -139,10 +146,19 @@ class Window(Adw.ApplicationWindow):
             self._tick = 0
         return False
 
-    def _on_details_toggled(self, row, _pspec):
-        self.ui_state.set_bool("details-expanded", row.get_expanded())
-        # Let the expander settle, then fit the window to the new content.
-        GLib.idle_add(self._fit_height)
+    def set_details_expanded(self, expanded, fit=True):
+        if expanded == self._details_expanded:
+            return
+        self._details_expanded = expanded
+        for row in self.rows.values():
+            row.set_visible(expanded)
+        self.details_arrow.set_from_icon_name("pan-up-symbolic" if expanded else "pan-down-symbolic")
+        self.details.set_tooltip_text("Hide details" if expanded else "Show details")
+        self.details.update_state([Gtk.AccessibleState.EXPANDED], [expanded])
+        if fit:
+            self.ui_state.set_bool("details-expanded", expanded)
+            # No animation involved, so the new natural size is final.
+            GLib.idle_add(self._fit_height)
 
     def _fit_height(self):
         """Resize to the natural height, keeping the user's width."""
