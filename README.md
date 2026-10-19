@@ -32,7 +32,7 @@ Based on [aws-vpn-client](https://github.com/aws-vpn-client/aws-vpn-client) by A
 | Active Directory / certificate-only authentication | Not supported (SAML only) |
 | AWS device posture assessment, banners, client route monitoring | **Not supported.** Endpoints that require posture checks will reject the connection |
 | Other GNOME Shell versions | Not supported yet. The extension declares GNOME 50 only |
-| Other distributions | RPM packaging only. The code is distribution-neutral but untested elsewhere |
+| Other distributions | RPM packaging only (COPR: Fedora 44 x86_64). The code is distribution-neutral but untested elsewhere |
 
 Reports about other setups are very welcome (see [Reporting problems](#reporting-problems)).
 
@@ -54,6 +54,19 @@ Stock OpenVPN cannot send a password that long, so the build carries the AWS pat
    └ one-shot listener 127.0.0.1:35001          ├ phase 1: openvpn as user `client-vpn`
                                                 └ phase 2: openvpn, drops to `client-vpn` once up
 ```
+
+## Install (Fedora 44)
+
+Packages are built in Fedora COPR from this repository:
+
+```sh
+sudo dnf copr enable adelsjarlen/client-vpn-gnome
+sudo dnf install client-vpn-gnome
+gnome-extensions enable client-vpn@adelsjarlen.github.io   # then log out and back in
+```
+
+Updates, including rebuilds for OpenVPN security releases, then arrive through `dnf upgrade` and
+GNOME Software. COPR signs the packages and publishes the source RPMs.
 
 ## Install from source (Fedora)
 
