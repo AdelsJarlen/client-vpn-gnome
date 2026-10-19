@@ -133,8 +133,10 @@ def fedora_status(today):
     active = sorted(active, key=int)
     project = fetch_json(f"{COPR_API}/project?ownername={COPR_OWNER}&projectname={COPR_PROJECT}")
     chroots = sorted(project.get("chroot_repos", {}))
-    builds = fetch_json(f"{COPR_API}/build/list?ownername={COPR_OWNER}&projectname={COPR_PROJECT}&limit=1")
-    last = (builds.get("items") or [{}])[0]
+    # Judge the latest *finished* build; one that is still running isn't a problem.
+    builds = fetch_json(f"{COPR_API}/build/list?ownername={COPR_OWNER}&projectname={COPR_PROJECT}&limit=10")
+    finished = [b for b in builds.get("items", []) if b.get("state") in ("succeeded", "failed", "canceled")]
+    last = finished[0] if finished else {}
     return {"fedora": active, "upcoming": sorted(upcoming, key=int), "chroots": chroots,
             "last_build": {"id": last.get("id"), "state": last.get("state"),
                            "version": (last.get("source_package") or {}).get("version")}}
@@ -153,7 +155,8 @@ def aws_status():
 def repo_status(token, repo):
     prs = fetch_json(f"{API}/repos/{repo}/pulls?state=open&per_page=100", token)
     dependabot = [p for p in prs if p["user"]["login"] == "dependabot[bot]"]
-    runs = fetch_json(f"{API}/repos/{repo}/actions/workflows/ci.yml/runs?branch=master&per_page=1", token)
+    runs = fetch_json(f"{API}/repos/{repo}/actions/workflows/ci.yml/runs?branch=master&status=completed&per_page=1",
+                      token)
     run = (runs.get("workflow_runs") or [{}])[0]
     issues = [i for i in fetch_json(f"{API}/repos/{repo}/issues?state=open&per_page=100", token)
               if "pull_request" not in i]

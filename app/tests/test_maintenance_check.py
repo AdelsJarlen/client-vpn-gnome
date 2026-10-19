@@ -57,11 +57,13 @@ class FedoraFilterTest(unittest.TestCase):
             {"id_prefix": "FEDORA-EPEL", "version": "10", "branch": "epel10", "state": "current", "eol": None},
         ]}
         copr_project = {"chroot_repos": {"fedora-44-x86_64": "url"}}
-        copr_builds = {"items": [{"id": 9, "state": "succeeded", "source_package": {"version": "0.3.1-1"}}]}
+        copr_builds = {"items": [{"id": 10, "state": "running", "source_package": {"version": None}},
+                                 {"id": 9, "state": "succeeded", "source_package": {"version": "0.3.1-1"}}]}
         with mock.patch.object(mc, "fetch_json", side_effect=[bodhi, copr_project, copr_builds]):
             st = mc.fedora_status(TODAY)
         self.assertEqual(st["fedora"], ["44", "45"])
         self.assertEqual(st["upcoming"], ["45"])
+        self.assertEqual(st["last_build"]["id"], 9)  # a running build is skipped
 
 
 if __name__ == "__main__":
