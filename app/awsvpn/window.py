@@ -154,7 +154,9 @@ class Window(Adw.ApplicationWindow):
             row.set_visible(expanded)
         self.details_arrow.set_from_icon_name("pan-up-symbolic" if expanded else "pan-down-symbolic")
         self.details.set_tooltip_text("Hide details" if expanded else "Show details")
-        self.details.update_state([Gtk.AccessibleState.EXPANDED], [expanded])
+        # GTK reads this state as an int; a Python bool would be passed as a
+        # boolean GValue and rejected with a g_value_get_int assertion.
+        self.details.update_state([Gtk.AccessibleState.EXPANDED], [int(expanded)])
         if fit:
             self.ui_state.set_bool("details-expanded", expanded)
             # No animation involved, so the new natural size is final.
