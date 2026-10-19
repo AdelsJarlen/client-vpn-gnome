@@ -134,6 +134,23 @@ Open an issue with your distribution, GNOME version and the output of
 
 Security issues: please report them privately, see [SECURITY.md](SECURITY.md).
 
+## Maintenance automation
+
+`.github/workflows/maintenance.yml` runs `scripts/maintenance_check.py` on a schedule and opens issues
+labelled `maintenance`:
+
+- **Weekly:** as soon as a newer OpenVPN release (with a downloadable signed tarball) exists in the bundled
+  series, an issue with the rebuild steps, labelled `security` if the ChangeLog names CVEs. A new OpenVPN
+  series gets a separate issue.
+- **Quarterly:** a `Maintenance check <year>-Q<n>` checklist covering GNOME Shell versions against the
+  extension, active Fedora releases against the COPR build targets, the last COPR build, CI, Dependabot PRs,
+  open issues and a reminder to read AWS's client release notes.
+
+Run either by hand from the Actions tab (*Maintenance → Run workflow*), or locally with
+`GITHUB_TOKEN=$(gh auth token) scripts/maintenance_check.py --mode quarterly --dry-run`.
+GitHub disables scheduled workflows in public repositories after 60 days without repository activity, and
+emails a warning first. Re-enable it from the Actions tab if that happens.
+
 ## Development
 
 ```sh
