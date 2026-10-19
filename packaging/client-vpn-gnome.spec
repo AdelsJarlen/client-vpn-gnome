@@ -5,7 +5,7 @@
 %global debug_package %{nil}
 
 Name:           client-vpn-gnome
-Version:        0.3.0
+Version:        0.3.1
 Release:        1%{?dist}
 Summary:        Unofficial AWS Client VPN (SAML) client for GNOME
 License:        MIT AND GPL-2.0-only WITH openvpn-openssl-exception
@@ -154,6 +154,11 @@ fi
 %{_datadir}/gnome-shell/extensions/%{ext_uuid}/
 
 %changelog
+* Mon Oct 19 2026 Ola Aasen Juul <94843506+AdelsJarlen@users.noreply.github.com> - 0.3.1-1
+- Update alerts depend on how the package was built: COPR users are told
+  once per OpenVPN release that the fix arrives through system updates;
+  source builds keep the rebuild steps and weekly reminders.
+
 * Mon Oct 19 2026 Ola Aasen Juul <94843506+AdelsJarlen@users.noreply.github.com> - 0.3.0-1
 - Rename to Client VPN for GNOME (package client-vpn-gnome, IDs
   io.github.AdelsJarlen.ClientVpn*) and state clearly that it is an

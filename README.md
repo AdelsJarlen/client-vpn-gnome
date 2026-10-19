@@ -101,25 +101,26 @@ or replacing the profile requires administrator authentication. On shared machin
 
 ## Keeping OpenVPN up to date
 
-The package bundles its own patched OpenVPN (`/usr/libexec/client-vpn/openvpn`), so distribution updates
-never touch it. To make up for that:
+The package bundles its own patched OpenVPN (`/usr/libexec/client-vpn/openvpn`), so Fedora's OpenVPN
+updates never touch it. A daily **user timer** (`client-vpn-update-check.timer`) compares the bundled
+version with upstream release tags on GitHub. It only reports releases whose signed tarball is downloadable,
+and lists any CVEs mentioned in the upstream ChangeLog. You can also check from the app menu (**Check for
+OpenVPN Updates**) or with `client-vpn --check-updates`.
 
-- A daily **user timer** (`client-vpn-update-check.timer`) compares the bundled version with upstream
-  release tags on GitHub. It only reports releases whose signed tarball is downloadable, and lists any
-  CVEs mentioned in the upstream ChangeLog.
-- A **newer release in the same series** (e.g. 2.7.9) gives a desktop notification, repeated weekly
-  until you update, and a banner in the app. A **new series** is announced once, because it needs the
-  AWS patch ported by hand.
-- You can also check manually from the app menu (**Check for OpenVPN Updates**) or with
-  `client-vpn --check-updates`.
+**Installed from COPR:** you don't need to do anything. You get one notification per OpenVPN release; the
+rebuilt package then arrives through `dnf upgrade` / GNOME Software. If it hasn't arrived within two weeks,
+please open an issue.
 
-To update to a maintenance release:
+**Built from source (and maintainers):** a newer release in the same series gives a notification (repeated
+weekly until you update) and a banner in the app with the rebuild steps:
 
 ```sh
 make openvpn-bump V=2.7.9     # rebases the AWS patch (no fuzz), updates Makefile + spec, bumps Release
 make rpm
 sudo dnf upgrade -y ./rpmbuild/RPMS/x86_64/client-vpn-gnome-*.rpm
 ```
+
+A new OpenVPN *series* is announced once to source builds, because it needs the AWS patch ported by hand.
 
 **Privacy:** the update check contacts `api.github.com`, `raw.githubusercontent.com` and
 `swupdate.openvpn.org` once a day. Nothing about you or your VPN is sent. To turn it off:

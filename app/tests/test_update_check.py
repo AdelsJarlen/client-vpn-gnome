@@ -72,6 +72,21 @@ class FetchTest(unittest.TestCase):
             uc._get("http://example.com/")
 
 
+class InstallChannelTest(unittest.TestCase):
+    def run_with(self, stdout=None, exc=None):
+        result = mock.Mock(stdout=stdout)
+        with mock.patch.object(uc.subprocess, "run", side_effect=exc, return_value=result):
+            return uc.install_channel()
+
+    def test_copr_vendor(self):
+        self.assertEqual(self.run_with("Fedora Copr - user adelsjarlen"), "copr")
+
+    def test_local_build_and_errors_count_as_source(self):
+        self.assertEqual(self.run_with("(none)"), "source")
+        self.assertEqual(self.run_with("package client-vpn-gnome is not installed"), "source")
+        self.assertEqual(self.run_with(exc=OSError("no rpm")), "source")
+
+
 class NotificationPolicyTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -96,6 +111,15 @@ class NotificationPolicyTest(unittest.TestCase):
         # A newer series update is announced right away.
         r3 = dict(r, update="2.6.25")
         self.assertEqual(uc.notifications_due(r3, now=t0 + 3600), ["update"])
+
+    def test_copr_users_are_told_once_and_not_about_series(self):
+        r = {"installed": "2.7.8", "update": "2.7.9", "cves": [], "newer_series": "2.8.0", "checked_at": 0}
+        t0 = 1_800_000_000
+        self.assertEqual(uc.notifications_due(r, now=t0, channel="copr"), ["update"])
+        uc.mark_notified(r, ["update"], now=t0)
+        self.assertEqual(uc.notifications_due(r, now=t0 + 30 * 86400, channel="copr"), [])
+        # A further release is announced again, once.
+        self.assertEqual(uc.notifications_due(dict(r, update="2.7.10"), now=t0 + 3600, channel="copr"), ["update"])
 
     def test_cached_result_dropped_after_upgrade(self):
         uc.record_result({"installed": "2.6.23", "update": "2.6.24", "cves": [], "newer_series": None,

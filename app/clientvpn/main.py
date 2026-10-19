@@ -13,7 +13,7 @@ from .login import LoginFlow  # noqa: E402
 from .window import Window  # noqa: E402
 
 APP_ID = "io.github.AdelsJarlen.ClientVpn"
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 
 
 class Application(Adw.Application):

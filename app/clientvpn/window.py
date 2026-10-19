@@ -209,7 +209,12 @@ class Window(Adw.ApplicationWindow):
         reveal = bool(result and result.get("update"))
         if reveal:
             kind = "Security update" if result.get("cves") else "Update"
-            self.update_banner.set_title(f"{kind}: OpenVPN {result['update']} is available")
+            if update_check.install_channel() == "copr":
+                self.update_banner.set_title(f"{kind}: OpenVPN {result['update']} arrives via system updates")
+                self.update_banner.set_button_label("Learn More")
+            else:
+                self.update_banner.set_title(f"{kind}: OpenVPN {result['update']} is available")
+                self.update_banner.set_button_label("How to Update")
         if reveal != self.update_banner.get_revealed():
             self.update_banner.set_revealed(reveal)
             # Refit once the banner's reveal animation has finished.
@@ -221,19 +226,30 @@ class Window(Adw.ApplicationWindow):
 
     def present_update_help(self, result):
         new, old = result["update"], result["installed"]
-        body = (f"System updates do not cover the OpenVPN bundled with Client VPN ({old}). "
-                "Rebuild the package from your client-vpn-gnome checkout:")
+        copr = update_check.install_channel() == "copr"
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        commands = Gtk.Label(
-            label=(f"make openvpn-bump V={new}\n"
-                   "make rpm\n"
-                   "sudo dnf upgrade \\\n  ./rpmbuild/RPMS/x86_64/client-vpn-gnome-*.rpm"),
-            selectable=True, xalign=0, css_classes=["monospace", "caption"])
-        box.append(commands)
+        if copr:
+            heading = f"OpenVPN {new} is on its way"
+            body = (f"Client VPN bundles its own OpenVPN ({old}), so the fix arrives as a Client VPN "
+                    "update. Install system updates when it appears, or run:")
+            command = "sudo dnf upgrade --refresh client-vpn-gnome"
+        else:
+            heading = f"Update OpenVPN to {new}"
+            body = (f"System updates do not cover the OpenVPN bundled with Client VPN ({old}). "
+                    "Rebuild the package from your client-vpn-gnome checkout:")
+            command = (f"make openvpn-bump V={new}\n"
+                       "make rpm\n"
+                       "sudo dnf upgrade \\\n  ./rpmbuild/RPMS/x86_64/client-vpn-gnome-*.rpm")
+        box.append(Gtk.Label(label=command, selectable=True, xalign=0, wrap=True,
+                             css_classes=["monospace", "caption"]))
         if result.get("cves"):
             box.append(Gtk.Label(label="Fixes " + ", ".join(result["cves"]), wrap=True,
                                  css_classes=["caption", "dim-label"]))
-        dialog = Adw.AlertDialog(heading=f"Update OpenVPN to {new}", body=body, extra_child=box)
+        if copr:
+            box.append(Gtk.Label(
+                label=f'No update after two weeks? <a href="{update_check.PROJECT_ISSUES_URL}">Check the project issues</a>.',
+                use_markup=True, wrap=True, css_classes=["caption"]))
+        dialog = Adw.AlertDialog(heading=heading, body=body, extra_child=box)
         dialog.add_response("notes", "Release Notes")
         dialog.add_response("close", "Close")
         dialog.set_default_response("close")

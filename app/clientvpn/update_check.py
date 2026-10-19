@@ -27,6 +27,8 @@ TARBALL_URL = "https://swupdate.openvpn.org/community/releases/openvpn-{v}.tar.g
 CHANGELOG_URL = "https://raw.githubusercontent.com/OpenVPN/openvpn/v{v}/ChangeLog"
 RELEASE_NOTES_URL = "https://github.com/OpenVPN/openvpn/blob/v{v}/ChangeLog"
 SECURITY_URL = "https://community.openvpn.net/Security%20Announcements"
+PACKAGE = "client-vpn-gnome"
+PROJECT_ISSUES_URL = "https://github.com/AdelsJarlen/client-vpn-gnome/issues"
 
 MAX_DOWNLOAD = 2 * 1024 * 1024
 TIMEOUT_S = 20
@@ -64,6 +66,21 @@ def installed_version():
         return parse_version(m.group(1)) if m else None
     except (OSError, subprocess.SubprocessError):
         return None
+
+
+def install_channel():
+    """How the installed package was built, which decides who has to act.
+
+    "copr": built by Fedora COPR; the maintainer rebuilds and users get the
+    fix through normal system updates. "source": built locally; whoever
+    built it has to rebuild. Anything unexpected counts as "source".
+    """
+    try:
+        vendor = subprocess.run(["rpm", "-q", "--qf", "%{VENDOR}", PACKAGE], capture_output=True,
+                                text=True, timeout=5, env={"PATH": "/usr/bin"}).stdout
+    except (OSError, subprocess.SubprocessError):
+        return "source"
+    return "copr" if vendor.startswith("Fedora Copr") else "source"
 
 
 def evaluate(installed, versions):
@@ -212,11 +229,14 @@ def record_result(result):
     save_cache(cache)
 
 
-def notifications_due(result, now=None):
+def notifications_due(result, now=None, channel="source"):
     """Which notifications to send now, as a list of 'update'/'series' keys.
 
-    Updates within the series are re-announced weekly until installed; a
-    newer series is announced once.
+    For source builds, updates within the series are re-announced weekly
+    until installed, since the user has to rebuild. COPR users cannot act
+    beyond installing system updates, so they are told once per release. A
+    newer series is announced once, and only to source builds (porting the
+    AWS patch is the maintainer's job).
     """
     now = now or time.time()
     cache = load_cache()
@@ -224,9 +244,9 @@ def notifications_due(result, now=None):
     due = []
     if result.get("update"):
         last = sent.get("update:" + result["update"], 0)
-        if now - last > REMIND_INTERVAL_S:
+        if (channel == "copr" and not last) or (channel != "copr" and now - last > REMIND_INTERVAL_S):
             due.append("update")
-    if result.get("newer_series"):
+    if result.get("newer_series") and channel != "copr":
         series = ".".join(result["newer_series"].split(".")[:2])
         if "series:" + series not in sent:
             due.append("series")
@@ -272,17 +292,23 @@ def run_async(app, on_done):
 
 def send_notifications(app, result):
     """Send the notifications that are due for result and remember them."""
-    due = notifications_due(result)
+    channel = install_channel()
+    due = notifications_due(result, channel=channel)
     if "update" in due:
-        n = Gio.Notification.new(f"OpenVPN {result['update']} is available")
-        body = (f"Client VPN bundles OpenVPN {result['installed']}, which system updates do not cover. "
-                "Rebuild the package to get the fixes.")
+        if channel == "copr":
+            n = Gio.Notification.new(f"OpenVPN {result['update']} released")
+            body = (f"Client VPN includes its own OpenVPN ({result['installed']}). The fix will arrive as an "
+                    "update to the Client VPN package; install system updates when it appears.")
+        else:
+            n = Gio.Notification.new(f"OpenVPN {result['update']} is available")
+            body = (f"Client VPN bundles OpenVPN {result['installed']}, which system updates do not cover. "
+                    "Rebuild the package to get the fixes.")
         if result["cves"]:
             body += " Security fixes: " + ", ".join(result["cves"]) + "."
             n.set_priority(Gio.NotificationPriority.HIGH)
         n.set_body(body)
         n.set_default_action("app.show-update-help")
-        n.add_button("How to Update", "app.show-update-help")
+        n.add_button("Learn More" if channel == "copr" else "How to Update", "app.show-update-help")
         app.send_notification("openvpn-update", n)
     if "series" in due:
         series = result["newer_series"].rsplit(".", 1)[0]
