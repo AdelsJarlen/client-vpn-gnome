@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: registry.fedoraproject.org/fedora:44
+    steps:
+      - name: Install tools
+        run: dnf -y install git make golang gcc python3-gobject glib2 gobject-introspection
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test (gofmt, go vet, go test -race, Python unit tests)
+        run: make test
+
+  rpm:
+    needs: test
+    runs-on: ubuntu-latest
+    container: registry.fedoraproject.org/fedora:44
+    steps:
+      - name: Install build dependencies
+        run: >-
+          dnf -y install git make curl golang gcc rpm-build gnupg2 openssl-devel lzo-devel
+          lz4-devel libnl3-devel libcap-ng-devel systemd-rpm-macros desktop-file-utils
+          python3-gobject glib2 gobject-introspection
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build RPM (verifies the OpenVPN tarball signature, runs %check)
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          make rpm
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rpms
+          path: |
+            rpmbuild/RPMS/*/*.rpm
+            rpmbuild/SRPMS/*.rpm
+          if-no-files-found: error
