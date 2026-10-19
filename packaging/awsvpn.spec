@@ -1,11 +1,11 @@
-%global ovpn_version 2.6.23
+%global ovpn_version 2.7.8
 %global app_id io.github.AdelsJarlen.AwsVpn
 %global ext_uuid awsvpn@adelsjarlen.github.io
 # Go binaries are built without Fedora's go-rpm-macros; skip debuginfo.
 %global debug_package %{nil}
 
 Name:           awsvpn
-Version:        0.1.2
+Version:        0.2.0
 Release:        1%{?dist}
 Summary:        AWS Client VPN (SAML) for GNOME: daemon, app and Quick Settings toggle
 License:        MIT AND GPL-2.0-only WITH openvpn-openssl-exception
@@ -55,15 +55,19 @@ popd
 
 %build
 pushd openvpn-%{ovpn_version}
+# Built from the release tarball: keep OpenVPN's version script from
+# picking up git metadata of the surrounding checkout.
+export GIT_DIR=/nonexistent
 %configure \
     --disable-plugins \
     --disable-debug \
     --with-crypto-library=openssl
 %make_build
+unset GIT_DIR
 popd
 
 pushd daemon
-export GOFLAGS="-mod=vendor -trimpath" GOPROXY=off GOTOOLCHAIN=local CGO_ENABLED=1
+export GOFLAGS="-mod=vendor -trimpath -buildvcs=false" GOPROXY=off GOTOOLCHAIN=local CGO_ENABLED=1
 export CGO_CFLAGS="%{optflags}" CGO_LDFLAGS="%{build_ldflags}"
 go build -buildmode=pie -ldflags "-linkmode=external" -o awsvpnd ./cmd/awsvpnd
 popd
@@ -135,6 +139,11 @@ install -m0644 extension/%{ext_uuid}/* %{buildroot}%{_datadir}/gnome-shell/exten
 %{_datadir}/gnome-shell/extensions/%{ext_uuid}/
 
 %changelog
+* Mon Oct 19 2026 Ola Aasen Juul <94843506+AdelsJarlen@users.noreply.github.com> - 0.2.0-1
+- Port to OpenVPN 2.7.8. write_string()'s new 16-bit cap is lifted along
+  with the 32-bit length fields. Data channel offload is off by default
+  (awsvpnd -dco enables it); --persist-key is no longer passed.
+
 * Mon Oct 19 2026 Ola Aasen Juul <94843506+AdelsJarlen@users.noreply.github.com> - 0.1.2-1
 - App: show/hide Details instantly instead of with AdwExpanderRow's slide
   animation, which made the window fit itself to a mid-animation size.

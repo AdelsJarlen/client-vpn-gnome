@@ -1,5 +1,5 @@
-VERSION      := 0.1.2
-OVPN_VERSION := 2.6.23
+VERSION      := 0.2.0
+OVPN_VERSION := 2.7.8
 OVPN_URL     := https://swupdate.openvpn.org/community/releases/openvpn-$(OVPN_VERSION).tar.gz
 TOPDIR       := $(CURDIR)/rpmbuild
 SOURCES      := $(TOPDIR)/SOURCES

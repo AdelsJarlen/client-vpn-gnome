@@ -1,15 +1,17 @@
-AWS Client VPN SAML patch for OpenVPN 2.6.23.
+AWS Client VPN SAML patch for OpenVPN 2.7.8.
 
 Derived from AWS's openvpn-2.6.12-aws-1 source drop (via upstream
-aws-vpn-client), rebased onto v2.6.23. Unlike the AWS original, the
+aws-vpn-client), ported to v2.7.8. Unlike the AWS original, the
 enlarged size macros are parenthesized: unparenthesized, expressions
 such as OPTION_PARM_SIZE + 16 expand to 1 << 33 (undefined behaviour).
+In 2.7, write_string() also caps strings at UINT16_MAX; with 32-bit
+length fields that cap is lifted so long SAML passwords still fit.
 
 diff --git a/src/openvpn/buffer.h b/src/openvpn/buffer.h
-index d988ef2..66ac439 100644
+index 8cfc036..ff7db61 100644
 --- a/src/openvpn/buffer.h
 +++ b/src/openvpn/buffer.h
-@@ -27,7 +27,7 @@
+@@ -26,7 +26,7 @@
  #include "basic.h"
  #include "error.h"
  
@@ -19,10 +21,10 @@ index d988ef2..66ac439 100644
  /*
   * Define verify_align function, otherwise
 diff --git a/src/openvpn/common.h b/src/openvpn/common.h
-index 3a84541..f3010bd 100644
+index aa7b721..c3720b2 100644
 --- a/src/openvpn/common.h
 +++ b/src/openvpn/common.h
-@@ -66,7 +66,7 @@ typedef unsigned long ptr_type;
+@@ -67,7 +67,7 @@ typedef unsigned long ptr_type;
   * maximum size of a single TLS message (cleartext).
   * This parameter must be >= PUSH_BUNDLE_SIZE
   */
@@ -32,10 +34,10 @@ index 3a84541..f3010bd 100644
  /* TLS control buffer minimum size
   *
 diff --git a/src/openvpn/error.h b/src/openvpn/error.h
-index ab2872a..e7fe796 100644
+index 1198994..4a23473 100644
 --- a/src/openvpn/error.h
 +++ b/src/openvpn/error.h
-@@ -34,7 +34,10 @@
+@@ -33,7 +33,10 @@
  #if defined(ENABLE_PKCS11) || defined(ENABLE_MANAGEMENT)
  #define ERR_BUF_SIZE 10240
  #else
@@ -48,28 +50,28 @@ index ab2872a..e7fe796 100644
  
  struct gc_arena;
 diff --git a/src/openvpn/manage.c b/src/openvpn/manage.c
-index 3a2e84e..e3792fa 100644
+index 7c460e7..cc4a83f 100644
 --- a/src/openvpn/manage.c
 +++ b/src/openvpn/manage.c
-@@ -2253,7 +2253,7 @@ man_read(struct management *man)
+@@ -2426,7 +2426,7 @@ man_read(struct management *man)
      /*
       * read command line from socket
       */
 -    unsigned char buf[256];
 +    unsigned char buf[MANAGEMENT_SOCKET_READ_BUFFER_SIZE];
-     int len = 0;
+     ssize_t len = 0;
  
  #ifdef TARGET_ANDROID
-@@ -2344,7 +2344,7 @@ man_read(struct management *man)
- static int
+@@ -2517,7 +2517,7 @@ man_read(struct management *man)
+ static ssize_t
  man_write(struct management *man)
  {
 -    const int size_hint = 1024;
 +    const int size_hint = 8192;
-     int sent = 0;
+     ssize_t sent = 0;
      const struct buffer *buf;
  
-@@ -2589,7 +2589,7 @@ man_connection_init(struct management *man)
+@@ -2747,7 +2747,7 @@ man_connection_init(struct management *man)
           * Allocate helper objects for command line input and
           * command output from/to the socket.
           */
@@ -79,28 +81,28 @@ index 3a2e84e..e3792fa 100644
  
          /*
 diff --git a/src/openvpn/manage.h b/src/openvpn/manage.h
-index 1896510..7284f10 100644
+index 27d3b60..47ac63e 100644
 --- a/src/openvpn/manage.h
 +++ b/src/openvpn/manage.h
-@@ -55,9 +55,12 @@
- #define MANAGEMENT_VERSION                      5
- #define MANAGEMENT_N_PASSWORD_RETRIES           3
- #define MANAGEMENT_LOG_HISTORY_INITIAL_SIZE   100
--#define MANAGEMENT_ECHO_BUFFER_SIZE           100
-+#define MANAGEMENT_ECHO_BUFFER_SIZE           8192
- #define MANAGEMENT_STATE_BUFFER_SIZE          100
+@@ -53,9 +53,12 @@
+ #define MANAGEMENT_VERSION                  6
+ #define MANAGEMENT_N_PASSWORD_RETRIES       3
+ #define MANAGEMENT_LOG_HISTORY_INITIAL_SIZE 100
+-#define MANAGEMENT_ECHO_BUFFER_SIZE         100
++#define MANAGEMENT_ECHO_BUFFER_SIZE         8192
+ #define MANAGEMENT_STATE_BUFFER_SIZE        100
  
-+#define COMMAND_LINE_OPTION_BUFFER_SIZE OPTION_PARM_SIZE
++#define COMMAND_LINE_OPTION_BUFFER_SIZE    OPTION_PARM_SIZE
 +#define MANAGEMENT_SOCKET_READ_BUFFER_SIZE OPTION_PARM_SIZE
 +
  /*
   * Management-interface-based deferred authentication
   */
 diff --git a/src/openvpn/misc.h b/src/openvpn/misc.h
-index 022498c..9724782 100644
+index 76bcac3..f1bcb82 100644
 --- a/src/openvpn/misc.h
 +++ b/src/openvpn/misc.h
-@@ -66,7 +66,10 @@ struct user_pass
+@@ -64,7 +64,10 @@ struct user_pass
  #ifdef ENABLE_PKCS11
  #define USER_PASS_LEN 4096
  #else
@@ -113,10 +115,10 @@ index 022498c..9724782 100644
      /* Note that username and password are expected to be null-terminated */
      char username[USER_PASS_LEN];
 diff --git a/src/openvpn/options.h b/src/openvpn/options.h
-index 8482a4a..ddf35c1 100644
+index 852144d..eb50d17 100644
 --- a/src/openvpn/options.h
 +++ b/src/openvpn/options.h
-@@ -54,8 +54,8 @@
+@@ -53,8 +53,8 @@
  /*
   * Max size of options line and parameter.
   */
@@ -125,13 +127,13 @@ index 8482a4a..ddf35c1 100644
 +#define OPTION_PARM_SIZE USER_PASS_LEN
 +#define OPTION_LINE_SIZE OPTION_PARM_SIZE
  
- extern const char title_string[];
+ #define PING_TIMEOUT_MAX 86400 /* one day (in seconds) */
  
 diff --git a/src/openvpn/ssl.c b/src/openvpn/ssl.c
-index 2f48af4..57ea22a 100644
+index a2eee6a..b8673ce 100644
 --- a/src/openvpn/ssl.c
 +++ b/src/openvpn/ssl.c
-@@ -1969,7 +1969,7 @@ tls_session_soft_reset(struct tls_multi *tls_multi)
+@@ -1836,7 +1836,7 @@ tls_session_soft_reset(struct tls_multi *tls_multi)
  static bool
  write_empty_string(struct buffer *buf)
  {
@@ -140,16 +142,24 @@ index 2f48af4..57ea22a 100644
      {
          return false;
      }
-@@ -1984,7 +1984,7 @@ write_string(struct buffer *buf, const char *str, const int maxlen)
+@@ -1847,12 +1847,13 @@ static bool
+ write_string(struct buffer *buf, const char *str, const int maxlen)
+ {
+     const size_t len = strlen(str) + 1;
+-    const size_t real_maxlen = (maxlen >= 0 && maxlen <= UINT16_MAX) ? (size_t)maxlen : UINT16_MAX;
+-    if (len > real_maxlen)
++    /* AWS: lengths are sent as 32-bit values, so only an explicit maxlen
++     * limits the string (the SAML password can exceed 64 KiB). */
++    if ((maxlen >= 0 && len > (size_t)maxlen) || len > UINT32_MAX)
      {
          return false;
      }
--    if (!buf_write_u16(buf, len))
-+    if (!buf_write_u32(buf, len))
+-    if (!buf_write_u16(buf, (uint16_t)len))
++    if (!buf_write_u32(buf, (uint32_t)len))
      {
          return false;
      }
-@@ -2345,6 +2345,10 @@ key_method_2_write(struct buffer *buf, struct tls_multi *multi, struct tls_sessi
+@@ -2223,6 +2224,10 @@ key_method_2_write(struct buffer *buf, struct tls_multi *multi, struct tls_sessi
          p2p_mode_ncp(multi, session);
      }
  
