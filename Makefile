@@ -1,4 +1,4 @@
-VERSION      := 0.2.0
+VERSION      := 0.3.0
 OVPN_VERSION := 2.7.8
 OVPN_URL     := https://swupdate.openvpn.org/community/releases/openvpn-$(OVPN_VERSION).tar.gz
 TOPDIR       := $(CURDIR)/rpmbuild
@@ -9,8 +9,9 @@ SOURCES      := $(TOPDIR)/SOURCES
 all: test
 
 test:
+	@cd daemon && unformatted="$$(gofmt -l cmd internal)" && { [ -z "$$unformatted" ] || { echo "gofmt needed:"; echo "$$unformatted"; exit 1; }; }
 	cd daemon && go vet ./... && go test -race ./...
-	python3 -m py_compile app/awsvpn/*.py
+	python3 -m py_compile app/clientvpn/*.py
 	cd app && python3 -W ignore -m unittest discover -s tests
 	@command -v ruff >/dev/null && ruff check app || true
 
@@ -28,14 +29,14 @@ $(SOURCES)/openvpn-$(OVPN_VERSION).tar.gz.asc:
 sources: vendor $(SOURCES)/openvpn-$(OVPN_VERSION).tar.gz $(SOURCES)/openvpn-$(OVPN_VERSION).tar.gz.asc
 	cp packaging/openvpn-signing-key.asc $(SOURCES)/
 	{ git ls-files --cached --others --exclude-standard; find daemon/vendor -type f; } | sort -u | \
-	  tar czf $(SOURCES)/awsvpn-$(VERSION).tar.gz --transform 's,^,awsvpn-$(VERSION)/,' -T -
+	  tar czf $(SOURCES)/client-vpn-gnome-$(VERSION).tar.gz --transform 's,^,client-vpn-gnome-$(VERSION)/,' -T -
 
 rpm: sources
-	rpmbuild -ba --define "_topdir $(TOPDIR)" packaging/awsvpn.spec
-	@ls -1 $(TOPDIR)/RPMS/*/awsvpn-*.rpm
+	rpmbuild -ba --define "_topdir $(TOPDIR)" packaging/client-vpn-gnome.spec
+	@ls -1 $(TOPDIR)/RPMS/*/client-vpn-gnome-*.rpm
 
 srpm: sources
-	rpmbuild -bs --define "_topdir $(TOPDIR)" packaging/awsvpn.spec
+	rpmbuild -bs --define "_topdir $(TOPDIR)" packaging/client-vpn-gnome.spec
 
 # Rebase the AWS patch onto a newer OpenVPN maintenance release: make openvpn-bump V=2.6.24
 openvpn-bump:
@@ -43,4 +44,4 @@ openvpn-bump:
 	scripts/bump-openvpn.sh $(V)
 
 clean:
-	rm -rf $(TOPDIR) daemon/vendor daemon/awsvpnd
+	rm -rf $(TOPDIR) daemon/vendor daemon/client-vpnd

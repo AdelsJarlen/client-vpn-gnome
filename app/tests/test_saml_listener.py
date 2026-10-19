@@ -6,7 +6,7 @@ import urllib.request
 
 from gi.repository import GLib
 
-from awsvpn.saml_listener import MAX_BODY, PORT, SamlListener
+from clientvpn.saml_listener import MAX_BODY, PORT, SamlListener
 
 URL = f"http://127.0.0.1:{PORT}/"
 

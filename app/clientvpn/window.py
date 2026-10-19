@@ -28,7 +28,7 @@ class _UiState:
     """Tiny per-user UI state (e.g. whether details are expanded)."""
 
     def __init__(self):
-        self._path = os.path.join(GLib.get_user_config_dir(), "awsvpn", "ui.ini")
+        self._path = os.path.join(GLib.get_user_config_dir(), "client-vpn", "ui.ini")
         self._kf = GLib.KeyFile()
         try:
             self._kf.load_from_file(self._path, GLib.KeyFileFlags.NONE)
@@ -54,7 +54,7 @@ class Window(Adw.ApplicationWindow):
     def __init__(self, app, client):
         # No default height: the window opens at its natural height, which
         # always includes the status area and the connect button.
-        super().__init__(application=app, title="AWS VPN", default_width=420)
+        super().__init__(application=app, title="Client VPN", default_width=420)
         self.client = client
         self.app = app
         self.ui_state = _UiState()
@@ -65,7 +65,7 @@ class Window(Adw.ApplicationWindow):
         menu = Gio.Menu()
         menu.append("Import Profile…", "win.import")
         menu.append("Check for OpenVPN Updates", "app.check-updates")
-        menu.append("About AWS VPN", "app.about")
+        menu.append("About Client VPN", "app.about")
         header.pack_end(Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu, tooltip_text="Main Menu"))
         view.add_top_bar(header)
 
@@ -221,13 +221,13 @@ class Window(Adw.ApplicationWindow):
 
     def present_update_help(self, result):
         new, old = result["update"], result["installed"]
-        body = (f"System updates do not cover the OpenVPN bundled with AWS VPN ({old}). "
-                "Rebuild the package from your aws-vpn-client checkout:")
+        body = (f"System updates do not cover the OpenVPN bundled with Client VPN ({old}). "
+                "Rebuild the package from your client-vpn-gnome checkout:")
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         commands = Gtk.Label(
             label=(f"make openvpn-bump V={new}\n"
                    "make rpm\n"
-                   "sudo dnf upgrade \\\n  ./rpmbuild/RPMS/x86_64/awsvpn-*.rpm"),
+                   "sudo dnf upgrade \\\n  ./rpmbuild/RPMS/x86_64/client-vpn-gnome-*.rpm"),
             selectable=True, xalign=0, css_classes=["monospace", "caption"])
         box.append(commands)
         if result.get("cves"):
@@ -253,7 +253,7 @@ class Window(Adw.ApplicationWindow):
         s = self.client.status
         if not self.client.available:
             self._set_state("Service unavailable",
-                            "The awsvpnd service is not installed or failed to start.",
+                            "The client-vpnd service is not installed or failed to start.",
                             "network-vpn-disabled-symbolic")
             self.button.set_visible(False)
             self.details_area.set_visible(False)
@@ -308,7 +308,7 @@ class Window(Adw.ApplicationWindow):
         filt.add_pattern("*.conf")
         filters = Gio.ListStore.new(Gtk.FileFilter)
         filters.append(filt)
-        dialog = Gtk.FileDialog(title="Import AWS VPN Profile", filters=filters, default_filter=filt)
+        dialog = Gtk.FileDialog(title="Import Client VPN Profile", filters=filters, default_filter=filt)
         dialog.open(self, None, self._on_file_chosen)
 
     def _on_file_chosen(self, dialog, res):

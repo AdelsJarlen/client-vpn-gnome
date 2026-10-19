@@ -1,0 +1,7 @@
+{
+  "uuid": "client-vpn@adelsjarlen.github.io",
+  "name": "Client VPN",
+  "description": "Quick Settings toggle for Client VPN for GNOME, an unofficial client for AWS Client VPN (SAML). Not affiliated with or endorsed by Amazon Web Services.",
+  "shell-version": ["50"],
+  "url": "https://github.com/AdelsJarlen/client-vpn-gnome"
+}

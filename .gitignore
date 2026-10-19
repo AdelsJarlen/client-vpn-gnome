@@ -1,5 +1,7 @@
 /rpmbuild/
 /daemon/vendor/
-/daemon/awsvpnd
+/daemon/client-vpnd
 __pycache__/
 *.pyc
+/.copr/build/
+/.copr/out/

@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from awsvpn import update_check as uc
+from clientvpn import update_check as uc
 
 CHANGELOG = """OpenVPN ChangeLog
 

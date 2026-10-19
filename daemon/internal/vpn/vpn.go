@@ -17,9 +17,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/AdelsJarlen/aws-vpn-client/daemon/internal/openvpn"
-	"github.com/AdelsJarlen/aws-vpn-client/daemon/internal/ovpnconf"
-	"github.com/AdelsJarlen/aws-vpn-client/daemon/internal/saml"
+	"github.com/AdelsJarlen/client-vpn-gnome/daemon/internal/openvpn"
+	"github.com/AdelsJarlen/client-vpn-gnome/daemon/internal/ovpnconf"
+	"github.com/AdelsJarlen/client-vpn-gnome/daemon/internal/saml"
 )
 
 // State is the externally visible connection state.
@@ -65,20 +65,20 @@ type DNS interface {
 
 // Config wires the manager to the system.
 type Config struct {
-	Binary       string // patched openvpn
-	StateDir     string // e.g. /var/lib/awsvpn (root 0700)
-	RunDir       string // e.g. /run/awsvpn (root 0711)
-	User         string
-	UID, GID     uint32 // unprivileged OpenVPN user
+	Binary   string // patched openvpn
+	StateDir string // e.g. /var/lib/client-vpn (root 0700)
+	RunDir   string // e.g. /run/client-vpn (root 0711)
+	User     string
+	UID, GID uint32 // unprivileged OpenVPN user
 	// Owner of the tunnel-phase files; 0 (root) in production.
 	RootUID, RootGID uint32
-	Launch       Launcher
-	DNS          DNS
-	Resolve      func(ctx context.Context, host string) ([]net.IP, error)
-	OnChange     func(Status)
-	DCO          bool // allow kernel data channel offload
-	LoginTimeout time.Duration
-	PhaseTimeout time.Duration
+	Launch           Launcher
+	DNS              DNS
+	Resolve          func(ctx context.Context, host string) ([]net.IP, error)
+	OnChange         func(Status)
+	DCO              bool // allow kernel data channel offload
+	LoginTimeout     time.Duration
+	PhaseTimeout     time.Duration
 }
 
 type pendingLogin struct {

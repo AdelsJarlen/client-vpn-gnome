@@ -1,0 +1,8 @@
+#!/usr/bin/python3 -I
+import sys
+
+sys.path.insert(0, "/usr/share/client-vpn")
+
+from clientvpn.main import main  # noqa: E402
+
+sys.exit(main())

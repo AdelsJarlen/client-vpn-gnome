@@ -1,6 +1,6 @@
-// Command awsvpnd is the privileged system service that connects to AWS
+// Command client-vpnd is the privileged system service that connects to AWS
 // Client VPN endpoints with SAML authentication. It is D-Bus activated and
-// controlled by the AWS VPN app and GNOME Shell extension.
+// controlled by the Client VPN app and GNOME Shell extension.
 package main
 
 import (
@@ -15,10 +15,10 @@ import (
 
 	"github.com/godbus/dbus/v5"
 
-	"github.com/AdelsJarlen/aws-vpn-client/daemon/internal/dbusapi"
-	"github.com/AdelsJarlen/aws-vpn-client/daemon/internal/openvpn"
-	"github.com/AdelsJarlen/aws-vpn-client/daemon/internal/resolved"
-	"github.com/AdelsJarlen/aws-vpn-client/daemon/internal/vpn"
+	"github.com/AdelsJarlen/client-vpn-gnome/daemon/internal/dbusapi"
+	"github.com/AdelsJarlen/client-vpn-gnome/daemon/internal/openvpn"
+	"github.com/AdelsJarlen/client-vpn-gnome/daemon/internal/resolved"
+	"github.com/AdelsJarlen/client-vpn-gnome/daemon/internal/vpn"
 )
 
 type resolvedDNS struct{ conn *dbus.Conn }
@@ -35,16 +35,16 @@ func launch(ctx context.Context, o openvpn.Options) (vpn.Proc, error) {
 }
 
 func main() {
-	binary := flag.String("openvpn", "/usr/libexec/awsvpn/openvpn", "patched OpenVPN binary")
-	stateDir := flag.String("state-dir", "/var/lib/awsvpn", "profile storage")
-	runDir := flag.String("run-dir", "/run/awsvpn", "runtime directory")
-	userName := flag.String("user", "awsvpn", "unprivileged user for OpenVPN")
+	binary := flag.String("openvpn", "/usr/libexec/client-vpn/openvpn", "patched OpenVPN binary")
+	stateDir := flag.String("state-dir", "/var/lib/client-vpn", "profile storage")
+	runDir := flag.String("run-dir", "/run/client-vpn", "runtime directory")
+	userName := flag.String("user", "client-vpn", "unprivileged user for OpenVPN")
 	dco := flag.Bool("dco", false, "allow OpenVPN data channel offload (kernel ovpn module)")
 	flag.Parse()
 	log.SetFlags(0) // journald adds timestamps
 
 	if os.Geteuid() != 0 {
-		log.Fatal("awsvpnd must run as root")
+		log.Fatal("client-vpnd must run as root")
 	}
 	if fi, err := os.Stat(*binary); err != nil {
 		log.Fatalf("openvpn binary: %v", err)
@@ -84,7 +84,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("export: %v", err)
 	}
-	log.Printf("awsvpnd ready on %s", dbusapi.BusName)
+	log.Printf("client-vpnd ready on %s", dbusapi.BusName)
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)

@@ -1,23 +1,23 @@
 [Unit]
 Description=AWS Client VPN daemon
-Documentation=https://github.com/AdelsJarlen/aws-vpn-client
+Documentation=https://github.com/AdelsJarlen/client-vpn-gnome
 After=network-online.target systemd-resolved.service
 Wants=network-online.target
 
 [Service]
 Type=dbus
-BusName=io.github.AdelsJarlen.AwsVpn1
-ExecStart=/usr/libexec/awsvpn/awsvpnd
+BusName=io.github.AdelsJarlen.ClientVpn1
+ExecStart=/usr/libexec/client-vpn/client-vpnd
 Restart=on-failure
 
-StateDirectory=awsvpn
+StateDirectory=client-vpn
 StateDirectoryMode=0700
-RuntimeDirectory=awsvpn
+RuntimeDirectory=client-vpn
 RuntimeDirectoryMode=0711
 
 # OpenVPN needs to create the tun device and routes, then drops to the
-# awsvpn user. The daemon needs DAC override to reach the phase-1 socket
-# owned by awsvpn, and CHOWN to hand that user its working directory.
+# client-vpn user. The daemon needs DAC override to reach the phase-1 socket
+# owned by client-vpn, and CHOWN to hand that user its working directory.
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_SETUID CAP_SETGID CAP_SETPCAP CAP_CHOWN CAP_DAC_OVERRIDE CAP_KILL
 AmbientCapabilities=
 NoNewPrivileges=yes

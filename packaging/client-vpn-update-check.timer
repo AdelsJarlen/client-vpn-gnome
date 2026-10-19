@@ -1,5 +1,5 @@
 [Unit]
-Description=Daily check for a newer OpenVPN for AWS VPN
+Description=Daily check for a newer OpenVPN for Client VPN
 
 [Timer]
 OnStartupSec=10min

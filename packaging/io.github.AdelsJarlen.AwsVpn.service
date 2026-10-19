@@ -1,3 +1,0 @@
-[D-BUS Service]
-Name=io.github.AdelsJarlen.AwsVpn
-Exec=/usr/bin/awsvpn --gapplication-service

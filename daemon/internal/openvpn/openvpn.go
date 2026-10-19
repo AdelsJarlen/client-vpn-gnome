@@ -21,7 +21,7 @@ import (
 )
 
 // TunDevice is the fixed tun interface name used for the tunnel.
-const TunDevice = "awsvpn0"
+const TunDevice = "clientvpn0"
 
 // Challenge is a parsed CRV1 dynamic challenge.
 type Challenge struct {
@@ -43,14 +43,14 @@ func ParseCRV1(line string) (Challenge, bool) {
 
 // Options describe how to start OpenVPN.
 type Options struct {
-	Binary    string // absolute path to patched openvpn
-	Config    string // path of the sanitized config file
-	RemoteIP  string
-	Port      int
-	Proto     string
-	MgmtPath  string // unix socket path, inside a root-only 0700 dir
-	User      string // unprivileged user to run as / drop to
-	UID, GID  uint32
+	Binary   string // absolute path to patched openvpn
+	Config   string // path of the sanitized config file
+	RemoteIP string
+	Port     int
+	Proto    string
+	MgmtPath string // unix socket path, inside a root-only 0700 dir
+	User     string // unprivileged user to run as / drop to
+	UID, GID uint32
 	// Phase1 runs unprivileged from the start and only collects the
 	// challenge. Otherwise the process starts as root (to create the tun
 	// device) and drops to User/Group once the tunnel is up.
@@ -58,7 +58,7 @@ type Options struct {
 	// DCO lets OpenVPN 2.7 use the kernel's data channel offload (ovpn
 	// module). Off by default: the userspace data path is the tested one.
 	DCO bool
-	Log    func(string)
+	Log func(string)
 }
 
 // Args builds the OpenVPN command line. Nothing user-controlled other than
@@ -95,12 +95,13 @@ func (o Options) Args() []string {
 
 // Process is a running OpenVPN instance.
 type Process struct {
-	cmd    *exec.Cmd
-	Mgmt   *Mgmt
-	done   chan struct{}
-	err    error
-	once   sync.Once
-	// LogLines receives every stdout/stderr line (already redacted).
+	cmd  *exec.Cmd
+	Mgmt *Mgmt
+	done chan struct{}
+	err  error
+	once sync.Once
+	// LogLines receives every stdout/stderr line unredacted, for parsing
+	// inside the daemon. Only redacted lines are written to the log.
 	LogLines chan string
 }
 
@@ -134,9 +135,9 @@ func Start(ctx context.Context, o Options) (*Process, error) {
 		sc := bufio.NewScanner(pr)
 		sc.Buffer(make([]byte, 0, 4096), 1<<20)
 		for sc.Scan() {
-			line := Redact(sc.Text())
+			line := sc.Text()
 			if o.Log != nil {
-				o.Log(line)
+				o.Log(Redact(line))
 			}
 			select {
 			case p.LogLines <- line:
@@ -208,9 +209,10 @@ func (p *Process) Kill() {
 	}
 }
 
-var redactRe = regexp.MustCompile(`(?i)(CRV1::[^:]*::|auth-token[ ,]+|password[^ ]* )\S+`)
+var redactRe = regexp.MustCompile(`(?i)(CRV1::[^:]*::|CRV1:[A-Z,]*:|auth-token[ ,]+|password[^ ]* )\S+`)
 
-// Redact removes tokens and passwords from a log line.
+// Redact removes tokens, passwords and the SAML challenge (session ID and
+// login URL) from a log line, so logs can be shared in bug reports.
 func Redact(line string) string {
 	return redactRe.ReplaceAllString(line, "${1}[redacted]")
 }

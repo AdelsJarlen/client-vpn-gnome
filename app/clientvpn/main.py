@@ -12,8 +12,8 @@ from .dbus_client import VpnClient  # noqa: E402
 from .login import LoginFlow  # noqa: E402
 from .window import Window  # noqa: E402
 
-APP_ID = "io.github.AdelsJarlen.AwsVpn"
-VERSION = "0.2.0"
+APP_ID = "io.github.AdelsJarlen.ClientVpn"
+VERSION = "0.3.0"
 
 
 class Application(Adw.Application):
@@ -40,7 +40,7 @@ class Application(Adw.Application):
 
     def do_startup(self):
         Adw.Application.do_startup(self)
-        GLib.set_application_name("AWS VPN")
+        GLib.set_application_name("Client VPN")
         for name, handler in (("about", self._on_about),
                               ("connect", lambda *_: self.connect_vpn(self.window)),
                               ("disconnect", lambda *_: self.disconnect_vpn()),
@@ -141,17 +141,19 @@ class Application(Adw.Application):
         if self.window:
             self.window.toast(text)
         else:
-            n = Gio.Notification.new("AWS VPN")
+            n = Gio.Notification.new("Client VPN")
             n.set_body(text)
             self.send_notification("login", n)
 
     def _on_about(self, *_):
         about = Adw.AboutDialog(
-            application_name="AWS VPN", application_icon=APP_ID, version=VERSION,
+            application_name="Client VPN", application_icon=APP_ID, version=VERSION,
             developer_name="Ola Aasen Juul",
-            website="https://github.com/AdelsJarlen/aws-vpn-client",
+            website="https://github.com/AdelsJarlen/client-vpn-gnome",
             license_type=Gtk.License.MIT_X11,
-            comments="Connect to AWS Client VPN endpoints with SAML single sign-on.",
+            comments=("Unofficial client for AWS Client VPN endpoints with SAML single sign-on.\n\n"
+                      "Not affiliated with or endorsed by Amazon Web Services. AWS and AWS Client VPN are trademarks "
+                      "of Amazon.com, Inc. or its affiliates."),
         )
         about.add_credit_section("Based on", ["aws-vpn-client by Alex Samorukov https://github.com/aws-vpn-client/aws-vpn-client"])
         about.present(self.window)

@@ -14,7 +14,7 @@ fi
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 makefile="$root/Makefile"
-spec="$root/packaging/awsvpn.spec"
+spec="$root/packaging/client-vpn-gnome.spec"
 cur="$(sed -n 's/^OVPN_VERSION *:= *//p' "$makefile")"
 old_patch="$root/patches/openvpn-v$cur-aws.patch"
 new_patch="$root/patches/openvpn-v$new-aws.patch"
@@ -67,7 +67,7 @@ release="$(sed -n 's/^Release: *\([0-9]\+\)%{?dist}$/\1/p' "$spec")"
 version="$(sed -n 's/^Version: *//p' "$spec")"
 next=$((release + 1))
 sed -i "s/^Release: *$release%{?dist}\$/Release:        $next%{?dist}/" "$spec"
-who="$(git -C "$root" config user.name || echo awsvpn) <$(git -C "$root" config user.email || echo nobody@localhost)>"
+who="$(git -C "$root" config user.name || echo client-vpn) <$(git -C "$root" config user.email || echo nobody@localhost)>"
 entry="* $(LC_ALL=C date '+%a %b %d %Y') $who - $version-$next\n- Update bundled OpenVPN to $new.\n"
 sed -i "s/^%changelog\$/%changelog\n$entry/" "$spec"
 
@@ -83,6 +83,6 @@ cat <<EOF
 OpenVPN bumped $cur -> $new (package $version-$next). Changes are staged.
 Next:
   make rpm
-  sudo dnf upgrade ./rpmbuild/RPMS/x86_64/awsvpn-$version-$next.*.rpm
+  sudo dnf upgrade ./rpmbuild/RPMS/x86_64/client-vpn-gnome-$version-$next.*.rpm
   git commit -m "Update bundled OpenVPN to $new" && git push
 EOF

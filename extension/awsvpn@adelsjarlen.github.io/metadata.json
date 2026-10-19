@@ -1,7 +1,0 @@
-{
-  "uuid": "awsvpn@adelsjarlen.github.io",
-  "name": "AWS VPN",
-  "description": "Quick Settings toggle and status for the AWS Client VPN daemon (awsvpnd).",
-  "shell-version": ["50"],
-  "url": "https://github.com/AdelsJarlen/aws-vpn-client"
-}

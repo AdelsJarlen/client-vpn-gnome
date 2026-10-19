@@ -1,8 +1,8 @@
 [Desktop Entry]
-Name=AWS VPN
-Comment=Connect to AWS Client VPN with single sign-on
-Exec=awsvpn
-Icon=io.github.AdelsJarlen.AwsVpn
+Name=Client VPN
+Comment=Unofficial client for AWS Client VPN with single sign-on
+Exec=client-vpn
+Icon=io.github.AdelsJarlen.ClientVpn
 Terminal=false
 Type=Application
 Categories=Network;GTK;
@@ -13,8 +13,8 @@ Actions=connect;disconnect;
 
 [Desktop Action connect]
 Name=Connect
-Exec=awsvpn --connect
+Exec=client-vpn --connect
 
 [Desktop Action disconnect]
 Name=Disconnect
-Exec=awsvpn --disconnect
+Exec=client-vpn --disconnect

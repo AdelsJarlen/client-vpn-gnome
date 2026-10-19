@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/AdelsJarlen/aws-vpn-client/daemon/internal/openvpn"
+	"github.com/AdelsJarlen/client-vpn-gnome/daemon/internal/openvpn"
 )
 
 const profile = `client
@@ -46,9 +46,9 @@ func newFake() *fakeProc {
 }
 
 func (f *fakeProc) Events() <-chan openvpn.Event { return f.events }
-func (f *fakeProc) Logs() <-chan string         { return f.logs }
-func (f *fakeProc) Done() <-chan struct{}       { return f.done }
-func (f *fakeProc) Stop()                       { f.once.Do(func() { close(f.done) }) }
+func (f *fakeProc) Logs() <-chan string          { return f.logs }
+func (f *fakeProc) Done() <-chan struct{}        { return f.done }
+func (f *fakeProc) Stop()                        { f.once.Do(func() { close(f.done) }) }
 func (f *fakeProc) SendCredentials(u, p string) error {
 	f.mu.Lock()
 	f.creds = append(f.creds, [2]string{u, p})
@@ -72,11 +72,11 @@ func samlResp(inResp string) string {
 }
 
 type harness struct {
-	m       *Manager
-	mu      sync.Mutex
-	opts    []openvpn.Options
-	procs   []*fakeProc
-	states  []State
+	m      *Manager
+	mu     sync.Mutex
+	opts   []openvpn.Options
+	procs  []*fakeProc
+	states []State
 }
 
 func newHarness(t *testing.T) *harness {
@@ -88,8 +88,8 @@ func newHarness(t *testing.T) *harness {
 	h := &harness{}
 	uid, gid := uint32(os.Getuid()), uint32(os.Getgid())
 	h.m = New(Config{
-		Binary: "/usr/libexec/awsvpn/openvpn", StateDir: state, RunDir: run,
-		User: "awsvpn", UID: uid, GID: gid, RootUID: uid, RootGID: gid,
+		Binary: "/usr/libexec/client-vpn/openvpn", StateDir: state, RunDir: run,
+		User: "client-vpn", UID: uid, GID: gid, RootUID: uid, RootGID: gid,
 		Resolve: func(ctx context.Context, host string) ([]net.IP, error) {
 			if !strings.HasSuffix(host, ".cvpn-endpoint-0123.prod.clientvpn.eu-west-1.amazonaws.com") {
 				t.Errorf("unexpected host %s", host)

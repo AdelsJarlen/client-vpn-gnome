@@ -1,4 +1,4 @@
-// AWS VPN Quick Settings toggle for GNOME Shell 50.
+// Client VPN Quick Settings toggle for GNOME Shell 50.
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
@@ -8,13 +8,13 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {QuickMenuToggle, SystemIndicator} from 'resource:///org/gnome/shell/ui/quickSettings.js';
 
-const BUS_NAME = 'io.github.AdelsJarlen.AwsVpn1';
-const OBJECT_PATH = '/io/github/AdelsJarlen/AwsVpn1';
-const APP_BINARY = '/usr/bin/awsvpn';
+const BUS_NAME = 'io.github.AdelsJarlen.ClientVpn1';
+const OBJECT_PATH = '/io/github/AdelsJarlen/ClientVpn1';
+const APP_BINARY = '/usr/bin/client-vpn';
 
 const IFACE_XML = `
 <node>
-  <interface name="io.github.AdelsJarlen.AwsVpn1">
+  <interface name="io.github.AdelsJarlen.ClientVpn1">
     <method name="Disconnect"/>
     <property name="State" type="s" access="read"/>
     <property name="ProfileName" type="s" access="read"/>
@@ -46,13 +46,13 @@ function formatDuration(seconds) {
     return h > 0 ? `${h}:${mm}:${ss}` : `${m}:${ss}`;
 }
 
-const AwsVpnToggle = GObject.registerClass({
+const ClientVpnToggle = GObject.registerClass({
     Signals: {'vpn-state-changed': {param_types: [GObject.TYPE_STRING]}},
-}, class AwsVpnToggle extends QuickMenuToggle {
+}, class ClientVpnToggle extends QuickMenuToggle {
     _init() {
-        super._init({title: 'AWS VPN', iconName: 'network-vpn-disabled-symbolic', toggleMode: false});
+        super._init({title: 'Client VPN', iconName: 'network-vpn-disabled-symbolic', toggleMode: false});
 
-        this.menu.setHeader('network-vpn-symbolic', 'AWS VPN');
+        this.menu.setHeader('network-vpn-symbolic', 'Client VPN');
         this._infoSection = new PopupMenu.PopupMenuSection();
         this.menu.addMenuItem(this._infoSection);
         this._rows = {};
@@ -65,7 +65,7 @@ const AwsVpnToggle = GObject.registerClass({
         }
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this._actionItem = this.menu.addAction('Connect', () => this._toggle());
-        this.menu.addAction('Open AWS VPN', () => this._launchApp([]));
+        this.menu.addAction('Open Client VPN', () => this._launchApp([]));
 
         this.connect('clicked', () => this._toggle());
 
@@ -74,7 +74,7 @@ const AwsVpnToggle = GObject.registerClass({
         new VpnProxy(Gio.DBus.system, BUS_NAME, OBJECT_PATH, (proxy, error) => {
             if (error) {
                 if (!this._cancellable.is_cancelled())
-                    console.warn(`AWS VPN: ${error.message}`);
+                    console.warn(`Client VPN: ${error.message}`);
                 this._sync();
                 return;
             }
@@ -108,7 +108,7 @@ const AwsVpnToggle = GObject.registerClass({
         this.iconName = icon;
         this.subtitle = state === 'error' ? (p?.LastError || subtitle) : (state === 'disconnected' ? null : subtitle);
         this._actionItem.label.text = this.checked ? (state === 'connected' ? 'Disconnect' : 'Cancel') : 'Connect';
-        this.menu.setHeader(icon, 'AWS VPN', profile || 'No profile imported');
+        this.menu.setHeader(icon, 'Client VPN', profile || 'No profile imported');
 
         const values = {
             ProfileName: profile || '—',
@@ -144,7 +144,7 @@ const AwsVpnToggle = GObject.registerClass({
             const proc = Gio.Subprocess.new([APP_BINARY, ...args], Gio.SubprocessFlags.NONE);
             proc.wait_async(null, null);
         } catch (e) {
-            Main.notifyError('AWS VPN', `Could not start the AWS VPN app: ${e.message}`);
+            Main.notifyError('Client VPN', `Could not start the Client VPN app: ${e.message}`);
         }
     }
 
@@ -163,15 +163,15 @@ const AwsVpnToggle = GObject.registerClass({
     }
 });
 
-const AwsVpnIndicator = GObject.registerClass(
-class AwsVpnIndicator extends SystemIndicator {
+const ClientVpnIndicator = GObject.registerClass(
+class ClientVpnIndicator extends SystemIndicator {
     _init() {
         super._init();
         this._indicator = this._addIndicator();
         this._indicator.icon_name = 'network-vpn-symbolic';
         this._indicator.visible = false;
 
-        const toggle = new AwsVpnToggle();
+        const toggle = new ClientVpnToggle();
         this._stateId = toggle.connect('vpn-state-changed', (_t, state) => {
             this._indicator.visible = state === 'connected';
         });
@@ -185,9 +185,9 @@ class AwsVpnIndicator extends SystemIndicator {
     }
 });
 
-export default class AwsVpnExtension extends Extension {
+export default class ClientVpnExtension extends Extension {
     enable() {
-        this._indicator = new AwsVpnIndicator();
+        this._indicator = new ClientVpnIndicator();
         Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
     }
 

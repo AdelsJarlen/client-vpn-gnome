@@ -1,5 +1,5 @@
 // Package dbusapi exports the manager on the system bus as
-// io.github.AdelsJarlen.AwsVpn1.
+// io.github.AdelsJarlen.ClientVpn1.
 package dbusapi
 
 import (
@@ -11,19 +11,19 @@ import (
 	"github.com/godbus/dbus/v5/introspect"
 	"github.com/godbus/dbus/v5/prop"
 
-	"github.com/AdelsJarlen/aws-vpn-client/daemon/internal/ovpnconf"
-	"github.com/AdelsJarlen/aws-vpn-client/daemon/internal/polkit"
-	"github.com/AdelsJarlen/aws-vpn-client/daemon/internal/saml"
-	"github.com/AdelsJarlen/aws-vpn-client/daemon/internal/vpn"
+	"github.com/AdelsJarlen/client-vpn-gnome/daemon/internal/ovpnconf"
+	"github.com/AdelsJarlen/client-vpn-gnome/daemon/internal/polkit"
+	"github.com/AdelsJarlen/client-vpn-gnome/daemon/internal/saml"
+	"github.com/AdelsJarlen/client-vpn-gnome/daemon/internal/vpn"
 )
 
 const (
-	BusName   = "io.github.AdelsJarlen.AwsVpn1"
-	Interface = "io.github.AdelsJarlen.AwsVpn1"
-	Path      = dbus.ObjectPath("/io/github/AdelsJarlen/AwsVpn1")
+	BusName   = "io.github.AdelsJarlen.ClientVpn1"
+	Interface = "io.github.AdelsJarlen.ClientVpn1"
+	Path      = dbus.ObjectPath("/io/github/AdelsJarlen/ClientVpn1")
 
-	actionConnect = "io.github.AdelsJarlen.AwsVpn.connect"
-	actionProfile = "io.github.AdelsJarlen.AwsVpn.manage-profile"
+	actionConnect = "io.github.AdelsJarlen.ClientVpn.connect"
+	actionProfile = "io.github.AdelsJarlen.ClientVpn.manage-profile"
 )
 
 // Service is the exported object.

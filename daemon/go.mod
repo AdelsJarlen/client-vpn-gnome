@@ -1,4 +1,4 @@
-module github.com/AdelsJarlen/aws-vpn-client/daemon
+module github.com/AdelsJarlen/client-vpn-gnome/daemon
 
 go 1.24
 

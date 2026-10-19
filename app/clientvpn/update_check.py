@@ -1,5 +1,5 @@
 """Check whether a newer OpenVPN release exists than the one bundled in the
-awsvpn package.
+client-vpn package.
 
 The package ships its own patched OpenVPN, so distribution updates never
 touch it. This module looks up upstream release tags, checks that the
@@ -20,8 +20,8 @@ import urllib.request
 
 from gi.repository import Gio, GLib
 
-VERSION_FILE = "/usr/share/awsvpn/openvpn-version"
-OPENVPN_BINARY = "/usr/libexec/awsvpn/openvpn"
+VERSION_FILE = "/usr/share/client-vpn/openvpn-version"
+OPENVPN_BINARY = "/usr/libexec/client-vpn/openvpn"
 TAGS_URL = "https://api.github.com/repos/OpenVPN/openvpn/git/matching-refs/tags/v2."
 TARBALL_URL = "https://swupdate.openvpn.org/community/releases/openvpn-{v}.tar.gz"
 CHANGELOG_URL = "https://raw.githubusercontent.com/OpenVPN/openvpn/v{v}/ChangeLog"
@@ -100,7 +100,7 @@ def _get(url, method="GET"):
     if not url.startswith("https://"):
         raise ValueError("only https URLs are fetched")
     req = urllib.request.Request(url, method=method, headers={
-        "User-Agent": "awsvpn-update-check",
+        "User-Agent": "client-vpn-update-check",
         "Accept": "application/vnd.github+json" if "api.github.com" in url else "*/*",
     })
     with urllib.request.urlopen(req, timeout=TIMEOUT_S) as r:
@@ -166,7 +166,7 @@ def check():
 # --- cache -----------------------------------------------------------------
 
 def _cache_path():
-    return os.path.join(GLib.get_user_cache_dir(), "awsvpn", "update-check.json")
+    return os.path.join(GLib.get_user_cache_dir(), "client-vpn", "update-check.json")
 
 
 def load_cache():
@@ -261,7 +261,7 @@ def run_async(app, on_done):
     def done(result, error):
         app.release()
         if error:
-            print(f"awsvpn: OpenVPN update check failed: {error}", file=sys.stderr)
+            print(f"client-vpn: OpenVPN update check failed: {error}", file=sys.stderr)
         else:
             record_result(result)
         on_done(result, error)
@@ -275,7 +275,7 @@ def send_notifications(app, result):
     due = notifications_due(result)
     if "update" in due:
         n = Gio.Notification.new(f"OpenVPN {result['update']} is available")
-        body = (f"AWS VPN bundles OpenVPN {result['installed']}, which system updates do not cover. "
+        body = (f"Client VPN bundles OpenVPN {result['installed']}, which system updates do not cover. "
                 "Rebuild the package to get the fixes.")
         if result["cves"]:
             body += " Security fixes: " + ", ".join(result["cves"]) + "."
@@ -287,7 +287,7 @@ def send_notifications(app, result):
     if "series" in due:
         series = result["newer_series"].rsplit(".", 1)[0]
         n = Gio.Notification.new(f"OpenVPN {series} series is available")
-        n.set_body(f"AWS VPN uses the {result['installed'].rsplit('.', 1)[0]} series, which still receives "
+        n.set_body(f"Client VPN uses the {result['installed'].rsplit('.', 1)[0]} series, which still receives "
                    f"fixes. Moving to {series} requires porting the AWS patch.")
         n.set_priority(Gio.NotificationPriority.LOW)
         n.add_button_with_target("Release Notes", "app.open-url",

@@ -17,9 +17,9 @@ type Event struct {
 	Body string
 
 	// Populated for STATE events.
-	State     string
-	TunnelIP  string
-	RemoteIP  string
+	State    string
+	TunnelIP string
+	RemoteIP string
 	// Populated for BYTECOUNT events.
 	BytesIn, BytesOut uint64
 }

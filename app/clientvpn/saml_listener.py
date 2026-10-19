@@ -16,14 +16,14 @@ PORT = 35001
 MAX_BODY = 512 * 1024  # form-encoded base64 response, generous upper bound
 MAX_RESPONSE = 256 * 1024  # must match the daemon's saml.MaxResponseSize
 
-_DONE_PAGE = b"""<!doctype html><meta charset="utf-8"><title>AWS VPN</title>
+_DONE_PAGE = b"""<!doctype html><meta charset="utf-8"><title>Client VPN</title>
 <style>body{font-family:sans-serif;display:grid;place-items:center;height:90vh;color:#333}
 @media(prefers-color-scheme:dark){body{background:#222;color:#eee}}</style>
-<p>Login received. You can close this tab and return to AWS VPN.</p>"""
+<p>Login received. You can close this tab and return to Client VPN.</p>"""
 
 
 class _Handler(http.server.BaseHTTPRequestHandler):
-    server_version = "awsvpn"
+    server_version = "client-vpn"
     sys_version = ""
     timeout = 10  # per-connection socket timeout
 

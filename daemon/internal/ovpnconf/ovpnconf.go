@@ -20,9 +20,9 @@ const MaxProfileSize = 64 * 1024
 
 // Profile is a parsed and sanitized profile.
 type Profile struct {
-	Host      string // e.g. cvpn-endpoint-xxx.prod.clientvpn.eu-west-1.amazonaws.com
-	Port      int
-	Proto     string // "udp" or "tcp"
+	Host           string // e.g. cvpn-endpoint-xxx.prod.clientvpn.eu-west-1.amazonaws.com
+	Port           int
+	Proto          string // "udp" or "tcp"
 	RandomHostname bool
 	// Config is the sanitized configuration, without remote/proto/port or
 	// any authentication directives.

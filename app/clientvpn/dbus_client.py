@@ -1,10 +1,10 @@
-"""Thin wrapper around the awsvpnd system D-Bus interface."""
+"""Thin wrapper around the client-vpnd system D-Bus interface."""
 
 from gi.repository import Gio, GLib, GObject
 
-BUS_NAME = "io.github.AdelsJarlen.AwsVpn1"
-OBJECT_PATH = "/io/github/AdelsJarlen/AwsVpn1"
-INTERFACE = "io.github.AdelsJarlen.AwsVpn1"
+BUS_NAME = "io.github.AdelsJarlen.ClientVpn1"
+OBJECT_PATH = "/io/github/AdelsJarlen/ClientVpn1"
+INTERFACE = "io.github.AdelsJarlen.ClientVpn1"
 
 PROPS = ("State", "ProfileName", "ServerAddress", "TunnelAddress",
          "ConnectedSince", "BytesIn", "BytesOut", "LastError")

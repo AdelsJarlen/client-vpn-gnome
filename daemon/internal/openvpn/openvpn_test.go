@@ -55,6 +55,8 @@ func TestRedact(t *testing.T) {
 	for _, in := range []string{
 		"PUSH: Received control message: 'PUSH_REPLY,route 10.0.0.0,auth-token SECRETTOKEN,ping 10'",
 		"password \"Auth\" CRV1::sid::SECRETTOKEN",
+		"AUTH: Received control message: AUTH_FAILED,CRV1:R:SECRETTOKEN-instance/1/2:b'Ti9B':https://portal.sso.example.com/saml?SAMLRequest=SECRETTOKEN",
+		">PASSWORD:Verification Failed: 'Auth' ['CRV1:R,E:SECRETTOKEN:dXNlcg==:https://idp.example.com/SECRETTOKEN']",
 	} {
 		if out := Redact(in); strings.Contains(out, "SECRETTOKEN") {
 			t.Errorf("not redacted: %s", out)
@@ -73,9 +75,9 @@ func TestPushedDNS(t *testing.T) {
 }
 
 func TestArgsNoSecretsAndPrivDrop(t *testing.T) {
-	o := Options{Binary: "/usr/libexec/awsvpn/openvpn", Config: "/run/awsvpn/t/vpn.conf", RemoteIP: "52.1.2.3", Port: 443, Proto: "udp", MgmtPath: "/run/awsvpn/t/mgmt.sock", User: "awsvpn"}
+	o := Options{Binary: "/usr/libexec/client-vpn/openvpn", Config: "/run/client-vpn/t/vpn.conf", RemoteIP: "52.1.2.3", Port: 443, Proto: "udp", MgmtPath: "/run/client-vpn/t/mgmt.sock", User: "client-vpn"}
 	a := strings.Join(o.Args(), " ")
-	for _, want := range []string{"--user awsvpn", "--management-client-user root", "--auth-retry none", "--remote 52.1.2.3 443", "--dns-updown disable"} {
+	for _, want := range []string{"--user client-vpn", "--management-client-user root", "--auth-retry none", "--remote 52.1.2.3 443", "--dns-updown disable"} {
 		if !strings.Contains(a, want) {
 			t.Errorf("missing %q in %s", want, a)
 		}

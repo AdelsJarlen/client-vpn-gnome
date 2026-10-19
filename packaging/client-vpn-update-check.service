@@ -1,0 +1,10 @@
+[Unit]
+Description=Check for a newer OpenVPN for Client VPN
+Documentation=https://github.com/AdelsJarlen/client-vpn-gnome
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/client-vpn --check-updates
+# Network lookups only; nothing here needs to write outside the cache.
+NoNewPrivileges=yes
+PrivateTmp=yes
