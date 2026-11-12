@@ -1,4 +1,4 @@
-// Client VPN Quick Settings toggle for GNOME Shell 50.
+// Client VPN Quick Settings toggle for GNOME Shell 50 and 51.
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
