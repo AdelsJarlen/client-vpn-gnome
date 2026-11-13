@@ -368,7 +368,6 @@ func (m *Manager) CompleteLogin(owner, samlResponse string) error {
 }
 
 func (m *Manager) supervise(proc Proc, password, dir string) {
-	defer os.RemoveAll(dir)
 	sent := false
 	connectTimer := time.NewTimer(m.cfg.PhaseTimeout)
 	defer connectTimer.Stop()
@@ -443,6 +442,10 @@ loop:
 		}
 	}
 
+	// Remove the tunnel dir before publishing the final state: a deferred removal
+	// would run after Disconnected/Failed is visible, so an observer (or a new
+	// connect, whose prepareDir recreates the dir) could race with it.
+	_ = os.RemoveAll(dir)
 	if dnsSet && m.cfg.DNS != nil {
 		_ = m.cfg.DNS.Revert(openvpn.TunDevice)
 	}
