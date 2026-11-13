@@ -22,7 +22,7 @@ Based on [aws-vpn-client](https://github.com/aws-vpn-client/aws-vpn-client) by A
 | Area | Status |
 |---|---|
 | Fedora 44, GNOME Shell 50 (Wayland) | **Tested** |
-| Fedora 45, GNOME Shell 51 (Wayland) | **Tested** (built from source, SAML connect). No COPR package yet, see [#1](https://github.com/AdelsJarlen/client-vpn-gnome/issues/1) |
+| Fedora 45, GNOME Shell 51 (Wayland) | **Tested** (COPR package and source build, SAML connect) |
 | SAML federated authentication, UDP endpoint, split tunnel | **Tested** against a production endpoint |
 | OpenVPN 2.7.8 with the userspace data path | **Tested** (default) |
 | Kernel data channel offload (`ovpn` module, `client-vpnd -dco`) | Untested, off by default |
@@ -33,7 +33,7 @@ Based on [aws-vpn-client](https://github.com/aws-vpn-client/aws-vpn-client) by A
 | Active Directory / certificate-only authentication | Not supported (SAML only) |
 | AWS device posture assessment, banners, client route monitoring | **Not supported.** Endpoints that require posture checks will reject the connection |
 | Other GNOME Shell versions | Not supported. The extension declares GNOME 50 and 51 only |
-| Other distributions | RPM packaging only (COPR: Fedora 44 x86_64, Fedora 45 pending). The code is distribution-neutral but untested elsewhere |
+| Other distributions | RPM packaging only (COPR: Fedora 44 and 45, x86_64). The code is distribution-neutral but untested elsewhere |
 
 Reports about other setups are very welcome (see [Reporting problems](#reporting-problems)).
 
@@ -56,10 +56,9 @@ Stock OpenVPN cannot send a password that long, so the build carries the AWS pat
                                                 └ phase 2: openvpn, drops to `client-vpn` once up
 ```
 
-## Install (Fedora 44)
+## Install (Fedora 44 and 45)
 
-Packages are built in Fedora COPR from this repository. Fedora 45 will get a build once its COPR chroot
-is enabled. Until then, use [Install from source](#install-from-source-fedora).
+Packages are built in Fedora COPR from this repository.
 
 ```sh
 sudo dnf copr enable adelsjarlen/client-vpn-gnome
