@@ -31,7 +31,7 @@ Based on [aws-vpn-client](https://github.com/aws-vpn-client/aws-vpn-client) by A
 | TCP endpoints, IPv6 | Untested |
 | Mutual certificate authentication combined with SAML | Untested |
 | Active Directory / certificate-only authentication | Not supported (SAML only) |
-| AWS device posture assessment, banners, client route monitoring | **Not supported.** Endpoints that require posture checks will reject the connection |
+| AWS device posture assessment, banners, client route monitoring | **Not supported.** Endpoints that require posture checks will reject the connection. (AWS's own client supports posture checks since 6.2.0.) |
 | Other GNOME Shell versions | Not supported. The extension declares GNOME 50 and 51 only |
 | Other distributions | RPM packaging only (COPR: Fedora 44 and 45, x86_64). The code is distribution-neutral but untested elsewhere |
 
