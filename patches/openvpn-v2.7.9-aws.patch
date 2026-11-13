@@ -1,7 +1,7 @@
-AWS Client VPN SAML patch for OpenVPN 2.7.8.
+AWS Client VPN SAML patch for OpenVPN 2.7.9.
 
 Derived from AWS's openvpn-2.6.12-aws-1 source drop (via upstream
-aws-vpn-client), ported to v2.7.8. Unlike the AWS original, the
+aws-vpn-client), ported to v2.7.9. Unlike the AWS original, the
 enlarged size macros are parenthesized: unparenthesized, expressions
 such as OPTION_PARM_SIZE + 16 expand to 1 << 33 (undefined behaviour).
 In 2.7, write_string() also caps strings at UINT16_MAX; with 32-bit
@@ -50,10 +50,10 @@ index 1198994..4a23473 100644
  
  struct gc_arena;
 diff --git a/src/openvpn/manage.c b/src/openvpn/manage.c
-index 7c460e7..cc4a83f 100644
+index c3b3ca1..f7ae733 100644
 --- a/src/openvpn/manage.c
 +++ b/src/openvpn/manage.c
-@@ -2426,7 +2426,7 @@ man_read(struct management *man)
+@@ -2427,7 +2427,7 @@ man_read(struct management *man)
      /*
       * read command line from socket
       */
@@ -62,7 +62,7 @@ index 7c460e7..cc4a83f 100644
      ssize_t len = 0;
  
  #ifdef TARGET_ANDROID
-@@ -2517,7 +2517,7 @@ man_read(struct management *man)
+@@ -2518,7 +2518,7 @@ man_read(struct management *man)
  static ssize_t
  man_write(struct management *man)
  {
@@ -71,7 +71,7 @@ index 7c460e7..cc4a83f 100644
      ssize_t sent = 0;
      const struct buffer *buf;
  
-@@ -2747,7 +2747,7 @@ man_connection_init(struct management *man)
+@@ -2748,7 +2748,7 @@ man_connection_init(struct management *man)
           * Allocate helper objects for command line input and
           * command output from/to the socket.
           */

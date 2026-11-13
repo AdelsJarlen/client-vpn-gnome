@@ -1,4 +1,4 @@
-%global ovpn_version 2.7.8
+%global ovpn_version 2.7.9
 %global app_id io.github.AdelsJarlen.ClientVpn
 %global ext_uuid client-vpn@adelsjarlen.github.io
 # Go binaries are built without Fedora's go-rpm-macros; skip debuginfo.
@@ -6,7 +6,7 @@
 
 Name:           client-vpn-gnome
 Version:        0.3.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Unofficial AWS Client VPN (SAML) client for GNOME
 License:        MIT AND GPL-2.0-only WITH openvpn-openssl-exception
 URL:            https://github.com/AdelsJarlen/client-vpn-gnome
@@ -154,6 +154,9 @@ fi
 %{_datadir}/gnome-shell/extensions/%{ext_uuid}/
 
 %changelog
+* Fri Nov 13 2026 Ola Aasen Juul <94843506+AdelsJarlen@users.noreply.github.com> - 0.3.1-2
+- Update bundled OpenVPN to 2.7.9.
+
 * Mon Oct 19 2026 Ola Aasen Juul <94843506+AdelsJarlen@users.noreply.github.com> - 0.3.1-1
 - Update alerts depend on how the package was built: COPR users are told
   once per OpenVPN release that the fix arrives through system updates;
