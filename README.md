@@ -8,7 +8,7 @@ Connect to [AWS Client VPN](https://aws.amazon.com/vpn/client-vpn/) endpoints th
 authentication** from Fedora and GNOME. AWS's own Linux client is published only for Ubuntu.
 
 - **client-vpnd**: a small Go system service (D-Bus activated, polkit-authorized) that drives a patched
-  OpenVPN 2.7.8 and drops privileges once the tunnel is up.
+  OpenVPN 2.7.9 and drops privileges once the tunnel is up.
 - **Client VPN** app: GTK 4 / libadwaita (Python). It imports your `.ovpn` profile, runs the browser
   login and shows status.
 - **Quick Settings toggle**: a GNOME Shell extension showing connection state, tunnel address, uptime
@@ -24,7 +24,7 @@ Based on [aws-vpn-client](https://github.com/aws-vpn-client/aws-vpn-client) by A
 | Fedora 44, GNOME Shell 50 (Wayland) | **Tested** |
 | Fedora 45, GNOME Shell 51 (Wayland) | **Tested** (COPR package and source build, SAML connect) |
 | SAML federated authentication, UDP endpoint, split tunnel | **Tested** against a production endpoint |
-| OpenVPN 2.7.8 with the userspace data path | **Tested** (default) |
+| OpenVPN 2.7.9 with the userspace data path | **Tested** (default) |
 | Kernel data channel offload (`ovpn` module, `client-vpnd -dco`) | Untested, off by default |
 | DNS servers/domains pushed by the endpoint (applied via systemd-resolved) | Implemented, untested |
 | Full tunnel (`redirect-gateway`) | Untested |
@@ -47,7 +47,7 @@ AWS Client VPN carries SAML through the OpenVPN dynamic challenge (CRV1) protoco
 3. OpenVPN reconnects **to the same server IP** with password `CRV1::<session>::<SAMLResponse>`.
 
 Stock OpenVPN cannot send a password that long, so the build carries the AWS patch
-(`patches/openvpn-v2.7.8-aws.patch`, which only enlarges buffers and length fields).
+(`patches/openvpn-v2.7.9-aws.patch`, which only enlarges buffers and length fields).
 
 ```
  Quick Settings toggle ─┐                      system D-Bus
